@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0d6efd" />
+  <meta name="description" content="Forge90 Personal Gym Coach" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Forge90</title>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <img src="icons/forge90-logo.png" class="brand-logo" alt="Forge90 logo" />
+        <div>
+          <div class="brand-name">Forge90</div>
+          <div class="brand-sub">Personal Gym Coach</div>
+        </div>
+      </div>
+      <button id="installBtn" class="ghost-btn hidden" type="button">Install</button>
+    </header>
+
+    <main>
+      <section id="homeView" class="view active" aria-labelledby="homeTitle">
+        <div class="hero-card">
+          <div class="hero-copy">
+            <span class="eyebrow">TODAY</span>
+            <h1 id="homeTitle">Your next workout</h1>
+            <p id="todayFocus" class="muted">Loading plan…</p>
+          </div>
+          <div class="goal-chip">
+            <span>Goal</span>
+            <strong>5 Dec 2026</strong>
+          </div>
+          <button id="startWorkoutBtn" class="primary-btn full" type="button">Start Workout</button>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card"><span class="stat-label">Last volume</span><strong id="homeLastVolume">—</strong></article>
+          <article class="stat-card"><span class="stat-label">Last calories</span><strong id="homeLastCalories">—</strong></article>
+          <article class="stat-card"><span class="stat-label">Completed this week</span><strong id="homeWeekDone">0</strong></article>
+          <article class="stat-card"><span class="stat-label">Workout streak</span><strong id="homeStreak">0</strong></article>
+        </div>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Body goal</h2>
+              <p class="muted">Track weight, waist, hip and chest over time.</p>
+            </div>
+            <button id="quickProgressBtn" class="ghost-btn" type="button">Add check-in</button>
+          </div>
+          <div class="goal-grid">
+            <div><span class="stat-label">Weight target</span><strong>−6 to −8 kg</strong></div>
+            <div><span class="stat-label">Waist / hip target</span><strong>~−2 in</strong></div>
+            <div><span class="stat-label">Training time</span><strong>90 min</strong></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>This week</h2>
+              <p class="muted">Switch between your normal 4-day plan and a 5-day week.</p>
+            </div>
+            <select id="homeWeekMode" class="select compact" aria-label="Workout week mode">
+              <option value="four">4-day week</option>
+              <option value="five">5-day week</option>
+            </select>
+          </div>
+          <div id="weekCards" class="week-cards"></div>
+        </section>
+      </section>
+
+      <section id="workoutView" class="view" aria-labelledby="workoutTitle">
+        <div class="section-head sticky-head">
+          <div>
+            <span class="eyebrow">WORKOUT</span>
+            <h1 id="workoutTitle">Workout Logger</h1>
+          </div>
+          <button id="resetWorkoutBtn" class="ghost-btn" type="button">Reset</button>
+        </div>
+
+        <section class="card controls-card">
+          <div class="form-grid">
+            <label>Week mode
+              <select id="weekMode" class="select">
+                <option value="four">Normal 4-day</option>
+                <option value="five">5-day week</option>
+              </select>
+            </label>
+            <label>Workout
+              <select id="workoutSelect" class="select"></select>
+            </label>
+            <label>Body weight (kg)
+              <input id="bodyWeight" class="input" type="number" min="30" max="300" step="0.1" />
+            </label>
+            <label>Planned duration (min)
+              <input id="duration" class="input" type="number" min="1" max="240" value="90" list="durationOptions" />
+              <datalist id="durationOptions"><option value="30"></option><option value="45"></option><option value="60"></option><option value="75"></option><option value="90"></option></datalist>
+            </label>
+            <label>Cardio (min)
+              <input id="cardioMinutes" class="input" type="number" min="0" max="120" value="15" />
+            </label>
+            <label>Cardio intensity
+              <select id="cardioIntensity" class="select">
+                <option value="4">Easy</option>
+                <option value="6" selected>Moderate</option>
+                <option value="8">Hard</option>
+              </select>
+            </label>
+          </div>
+          <p id="workoutFocus" class="muted focus-copy"></p>
+        </section>
+
+        <div id="exerciseCards" class="exercise-list"></div>
+
+        <section class="live-bar">
+          <div><span>Sets</span><strong id="liveSets">0</strong></div>
+          <div><span>Reps</span><strong id="liveReps">0</strong></div>
+          <div><span>Volume</span><strong id="liveVolume">0 kg</strong></div>
+          <button id="finishWorkoutBtn" class="primary-btn" type="button">Finish & Report</button>
+        </section>
+      </section>
+
+      <section id="progressView" class="view" aria-labelledby="progressTitle">
+        <span class="eyebrow">PROGRESS</span>
+        <h1 id="progressTitle">Body Progress</h1>
+        <p class="muted">Stored only on this device for now.</p>
+
+        <form id="progressForm" class="card form-card">
+          <div class="form-grid two">
+            <label>Date<input id="progressDate" class="input" type="date" required /></label>
+            <label>Weight (kg)<input id="progressWeight" class="input" type="number" min="30" max="300" step="0.1" required /></label>
+            <label>Waist (cm)<input id="progressWaist" class="input" type="number" min="40" max="200" step="0.1" required /></label>
+            <label>Hip (cm)<input id="progressHip" class="input" type="number" min="40" max="200" step="0.1" required /></label>
+            <label>Chest (cm)<input id="progressChest" class="input" type="number" min="40" max="200" step="0.1" required /></label>
+            <label>Notes<input id="progressNotes" class="input" type="text" maxlength="120" placeholder="Optional" /></label>
+          </div>
+          <button class="primary-btn full" type="submit">Save Check-in</button>
+        </form>
+
+        <section class="card">
+          <div class="section-head"><h2>Latest change</h2><span id="progressCount" class="muted">0 records</span></div>
+          <div id="progressSummary" class="progress-summary empty-state">Add your first check-in.</div>
+        </section>
+
+        <section class="card">
+          <h2>Check-in history</h2>
+          <div id="progressHistory" class="history-list"></div>
+        </section>
+      </section>
+
+      <section id="historyView" class="view" aria-labelledby="historyTitle">
+        <span class="eyebrow">HISTORY</span>
+        <h1 id="historyTitle">Workout History</h1>
+        <p class="muted">Every finished workout is saved locally on your phone/browser.</p>
+        <div id="historyList" class="history-list"></div>
+        <button id="exportBtn" class="ghost-btn full" type="button">Export Local Backup</button>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-btn active" data-view="homeView" type="button"><span>⌂</span>Home</button>
+      <button class="nav-btn" data-view="workoutView" type="button"><span>🏋</span>Workout</button>
+      <button class="nav-btn" data-view="progressView" type="button"><span>↗</span>Progress</button>
+      <button class="nav-btn" data-view="historyView" type="button"><span>≡</span>History</button>
+    </nav>
+  </div>
+
+  <dialog id="guideDialog" class="dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="section-head">
+        <div><span class="eyebrow">EXERCISE GUIDE</span><h2 id="guideTitle"></h2></div>
+        <button class="ghost-btn" value="cancel">Close</button>
+      </div>
+      <div class="guide-grid">
+        <div><h3>Equipment</h3><p id="guideEquipment" class="muted"></p></div>
+        <div><h3>Muscles</h3><p id="guideMuscles" class="muted"></p></div>
+        <div><h3>Setup</h3><p id="guideSetup" class="muted"></p></div>
+        <div><h3>How to do it</h3><ol id="guideSteps"></ol></div>
+        <div><h3>Avoid</h3><p id="guideAvoid" class="muted"></p></div>
+        <div><h3>Alternative</h3><p id="guideAlt" class="muted"></p></div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="reportDialog" class="dialog">
+    <div class="dialog-card report-card">
+      <div class="section-head">
+        <div><span class="eyebrow">WORKOUT REPORT</span><h2 id="reportTitle"></h2></div>
+        <button id="closeReportBtn" class="ghost-btn" type="button">Close</button>
+      </div>
+      <div class="report-grid">
+        <div><span>Duration</span><strong id="reportDuration">—</strong></div>
+        <div><span>Exercises</span><strong id="reportExercises">—</strong></div>
+        <div><span>Sets</span><strong id="reportSets">—</strong></div>
+        <div><span>Reps</span><strong id="reportReps">—</strong></div>
+        <div><span>Total volume</span><strong id="reportVolume">—</strong></div>
+        <div><span>Est. calories</span><strong id="reportCalories">—</strong></div>
+      </div>
+      <div class="report-section">
+        <h3>Completed lifts</h3>
+        <div id="reportDetails" class="history-list"></div>
+      </div>
+      <div class="tip-box">
+        <strong>Next session</strong>
+        <p id="reportGuidance"></p>
+      </div>
+      <p class="fine-print">Calories are estimated from body weight, duration and activity intensity. They are not a medical measurement.</p>
+    </div>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
