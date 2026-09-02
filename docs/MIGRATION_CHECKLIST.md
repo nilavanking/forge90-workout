@@ -1,20 +1,25 @@
-# Forge90 Initial GitHub Migration Checklist
+# Forge90 GitHub migration checklist
 
-- [x] GitHub repository created
-- [x] `main` established as the future production branch
-- [x] Production deployment metadata recorded
-- [x] Safe release workflow documented
-- [ ] Capture complete current Netlify deployed source
-- [ ] Reconcile 31 Aug base application into repository
-- [ ] Reconcile 1 Sep core/hips/glutes enhancement patch
-- [ ] Reconcile 2 Sep IndexedDB/Dexie package
-- [ ] Reconcile 2 Sep Weight Journey package
-- [ ] Run regression and data-preservation tests
-- [ ] Create/verify Netlify preview from GitHub
-- [ ] Connect existing Netlify project to GitHub `main`
-- [ ] Verify first Git-triggered production deployment
-- [ ] Disable normal manual ZIP deployment workflow
+## Completed
+- [x] Create `nilavanking/forge90-workout` repository.
+- [x] Reserve `main` as the production branch.
+- [x] Create `migration/netlify-baseline` branch.
+- [x] Capture the verified 1 September production preservation layer.
+- [x] Audit the uploaded 1 September Core/Hips/Glutes, standard update, v2 session-controls and 2 September Phase 1 IndexedDB/Dexie packages.
+- [x] Verify Phase 1 JavaScript syntax and static asset completeness.
+- [x] Confirm the Phase 1 enhancement layer preserves the approved core/hips/glutes exercise set.
 
-## Stop condition
+## Open release gates
+- [ ] Reconcile v2 equipment/session-control behavior with the Phase 1 IndexedDB/Dexie storage adapter.
+- [ ] Add and reconcile the Weight Journey package.
+- [ ] Build one self-contained production candidate in GitHub with no dependency on the immutable 31 August JavaScript base.
+- [ ] Test 4-day and 5-day plans, set logging, reports, home core sessions, timers and PWA behavior.
+- [ ] Test localStorage -> IndexedDB migration with existing workout/history data preserved.
+- [ ] Test rollback/safety mirror behavior.
+- [ ] Verify the combined candidate in a Netlify preview.
+- [ ] Connect the existing Netlify `forge90-workout` project to GitHub `main`.
+- [ ] Verify the first Git-triggered production deploy.
+- [ ] Retire manual ZIP upload as the normal production release path.
 
-Do not connect Netlify production to `main` while any source required to reproduce the current app is missing. This prevents a partial Git repository from replacing the working production site.
+## Safety rule
+Do not connect production Netlify to `main` until the repository can reproduce the complete approved application and all release gates pass.
