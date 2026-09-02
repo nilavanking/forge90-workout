@@ -1,0 +1,4 @@
+[build]
+  publish = "."
+
+# Production will be connected to GitHub only after the migration checklist is complete.
