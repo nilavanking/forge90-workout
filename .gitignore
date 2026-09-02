@@ -1,0 +1,19 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+
+# Package/build output (for future tooling)
+node_modules/
+dist/
+build/
+.netlify/
