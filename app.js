@@ -17,8 +17,9 @@
       await load('./forge90-storage.js?v=20260902-1');
       await window.Forge90Storage.init();
       await load('./forge90-base-app.js?v=20260902-1');
-      await load('./forge90-timers.js?v=20260902-1');
+      await load('./forge90-session-controls.js?v=20260902-2');
       await load('./forge90-enhancements.js?v=20260902-1');
+      await load('./forge90-weight.js?v=20260902-1');
     } catch (error) {
       console.error('[Forge90] Combined application failed to load.', error);
       const box = document.createElement('div');
