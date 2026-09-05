@@ -102,6 +102,13 @@ viewport. It verified:
 - IndexedDB mode remained active; and
 - the offline mobile page had no horizontal overflow or browser errors.
 
+An independent sub-agent repeated the test from an isolated checkout at commit
+`61f466b`. Its server log confirmed the browser requested `sw.js` and every cached
+runtime asset. Chromium exposed the Forge90 Install button after
+`beforeinstallprompt`, and the same page reloaded successfully with the local server
+completely stopped. Start Workout and Home Core Sessions remained rendered with zero
+console errors.
+
 ## Release decision
 
 **IMPLEMENTATION: COMPLETE**
