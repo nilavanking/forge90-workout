@@ -101,7 +101,14 @@
     ]
   };
 
-  const safeParse = (text, fallback) => { try { return JSON.parse(text); } catch { return fallback; } };
+  const safeParse = (text, fallback) => {
+    try {
+      const value = JSON.parse(text);
+      return value === null ? fallback : value;
+    } catch {
+      return fallback;
+    }
+  };
   const getLogs = () => safeParse(localStorage.getItem(LOG_KEY), {});
   const setLogs = (v) => localStorage.setItem(LOG_KEY, JSON.stringify(v));
   const getHistory = () => safeParse(localStorage.getItem(HISTORY_KEY), []);
