@@ -14,18 +14,22 @@
 - [x] Build a complete local self-contained migration candidate containing the base app, bundled Dexie, session controls, enhancements, Weight Journey, PWA assets and icons.
 - [x] Run JavaScript syntax and static asset/service-worker completeness checks on the combined candidate.
 - [x] Run a storage migration harness verifying legacy import, unrelated-key isolation, IndexedDB writes, localStorage safety mirror and tombstone deletion behavior.
+- [x] Attach the remaining self-contained runtime assets to GitHub (`forge90-base-app.js`, bundled Dexie, Dexie license, and app icons/logo).
+- [x] Run the interactive functional regression for 4-day/5-day plans, workout logging, reports, session controls, Core/Hips/Glutes, Home Core and Weight Journey.
+- [x] Verify localStorage -> IndexedDB migration, unrelated-key isolation, the safety mirror and tombstones using a real browser profile on a draft-only stable Netlify alias.
+- [x] Verify the combined candidate in an immutable Netlify preview, including phone-size layout.
 
 ## Open release gates
-- [ ] Attach the remaining self-contained runtime assets to GitHub (`forge90-base-app.js`, bundled Dexie, Dexie license, and app icons/logo).
-- [ ] Run interactive browser regression tests for 4-day and 5-day plans, set logging, reports, home core sessions, session controls, Weight Journey and PWA behavior.
-- [ ] Verify localStorage -> IndexedDB migration using a real browser profile containing existing workout/history/weight data.
-- [ ] Verify the combined candidate in a Netlify preview.
+- [ ] Verify an offline reload with network disabled and exercise PWA installation UI in an environment that exposes those controls.
 - [ ] Connect the existing Netlify `forge90-workout` project to GitHub `main`.
 - [ ] Verify the first Git-triggered production deploy.
 - [ ] Retire manual ZIP upload as the normal production release path.
 
 ## Current test limitation
-The managed local Chromium environment blocks localhost with `ERR_BLOCKED_BY_ADMINISTRATOR`, so interactive regression must be completed in an allowed browser/Netlify preview environment.
+Interactive regression was completed through a non-production Netlify preview. The
+managed browser does not expose a network-offline toggle, so a true offline reload
+and PWA installation flow remain not verified. See
+`docs/REGRESSION_EVIDENCE_2026-09-05.md`.
 
 ## Safety rule
 Do not connect production Netlify to `main` until the repository can reproduce the complete approved application and all release gates pass.
