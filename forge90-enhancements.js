@@ -152,9 +152,11 @@
   }
 
   function findFinishButton() {
-    return [...document.querySelectorAll('button,a,[role="button"]')].find(el => {
+    const activeView = document.querySelector('.view.active');
+    if (!activeView) return null;
+    return [...activeView.querySelectorAll('button,a,[role="button"]')].find(el => {
       const t = text(el).toLowerCase();
-      return el.getClientRects().length > 0 && t.includes('finish') && t.includes('report');
+      return t.includes('finish') && t.includes('report');
     }) || null;
   }
 
