@@ -81,12 +81,26 @@ It returned `BROWSER_STORAGE_REGRESSION=PASS` with all of these checks true:
 Diagnostic deploy ID: `6a9c459535536d1bfacd08ce`. The diagnostic page is test-only
 and is not part of the branch.
 
-## Remaining release gate
+## PWA/offline browser sandbox
 
-The service-worker/manifest/cache implementation is verified statically, but this
-managed browser does not expose an offline-network toggle. A true airplane-mode or
-network-disabled reload is therefore **NOT VERIFIED**. PWA installation UI was also
-not exercised.
+The isolated runtime test initially exposed a real registration defect: the base
+application attached its registration callback after the `load` event because the
+base script itself is loaded asynchronously. The callback therefore never ran.
+
+The correction registers immediately when `document.readyState` is `complete`, or
+uses a one-time `load` listener when loading is still in progress.
+
+`tests/verify-pwa-offline.cjs` then passed in headless Chromium at a 390 x 844
+viewport. It verified:
+
+- the service worker reached the activated state and controlled the page;
+- the named Forge90 cache contained the complete app shell;
+- Chromium reported zero PWA installability errors;
+- networking was disabled through the browser context;
+- Forge90 reloaded successfully while offline;
+- Start Workout and the manifest remained available offline;
+- IndexedDB mode remained active; and
+- the offline mobile page had no horizontal overflow or browser errors.
 
 ## Release decision
 
@@ -96,7 +110,7 @@ not exercised.
 
 **INTERACTIVE FUNCTIONAL REGRESSION: VERIFIED**
 
-**FULL PWA/OFFLINE ACCEPTANCE: NOT VERIFIED**
+**PWA/OFFLINE BROWSER ACCEPTANCE: VERIFIED**
 
-PR #1 must remain Draft. Do not merge it, connect production Netlify to GitHub, or
-change production until the remaining PWA/offline acceptance check passes.
+All requested migration regression gates are now verified. PR #1 remains Draft and
+production remains unchanged pending explicit production-cutover approval.

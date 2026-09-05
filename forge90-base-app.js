@@ -317,7 +317,11 @@
 
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').classList.remove('hidden');});
   $('installBtn').addEventListener('click',async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('installBtn').classList.add('hidden');});
-  if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW registration failed',err)));}
+  if('serviceWorker' in navigator){
+    const registerServiceWorker=()=>navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW registration failed',err));
+    if(document.readyState==='complete')registerServiceWorker();
+    else window.addEventListener('load',registerServiceWorker,{once:true});
+  }
 
   renderHome();
 })();

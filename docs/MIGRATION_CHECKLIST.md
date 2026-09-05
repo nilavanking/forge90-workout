@@ -18,18 +18,17 @@
 - [x] Run the interactive functional regression for 4-day/5-day plans, workout logging, reports, session controls, Core/Hips/Glutes, Home Core and Weight Journey.
 - [x] Verify localStorage -> IndexedDB migration, unrelated-key isolation, the safety mirror and tombstones using a real browser profile on a draft-only stable Netlify alias.
 - [x] Verify the combined candidate in an immutable Netlify preview, including phone-size layout.
+- [x] Verify service-worker registration, full app-shell caching, a network-disabled reload, offline manifest access and Chromium PWA installability criteria in an isolated browser sandbox.
 
 ## Open release gates
-- [ ] Verify an offline reload with network disabled and exercise PWA installation UI in an environment that exposes those controls.
 - [ ] Connect the existing Netlify `forge90-workout` project to GitHub `main`.
 - [ ] Verify the first Git-triggered production deploy.
 - [ ] Retire manual ZIP upload as the normal production release path.
 
 ## Current test limitation
-Interactive regression was completed through a non-production Netlify preview. The
-managed browser does not expose a network-offline toggle, so a true offline reload
-and PWA installation flow remain not verified. See
-`docs/REGRESSION_EVIDENCE_2026-09-05.md`.
+Interactive regression was completed through a non-production Netlify preview.
+Offline reload and installability were verified separately in an isolated Chromium
+sandbox with network emulation. See `docs/REGRESSION_EVIDENCE_2026-09-05.md`.
 
 ## Safety rule
 Do not connect production Netlify to `main` until the repository can reproduce the complete approved application and all release gates pass.
