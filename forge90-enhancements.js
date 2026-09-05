@@ -136,7 +136,9 @@
   }
 
   function inferPlanMode() {
-    const selectedMode = document.getElementById('weekMode')?.value || document.getElementById('homeWeekMode')?.value;
+    const selectedMode = document.querySelector('.view.active #weekMode, .view.active #homeWeekMode')?.value
+      || document.getElementById('homeWeekMode')?.value
+      || document.getElementById('weekMode')?.value;
     if (selectedMode === 'four') return 4;
     if (selectedMode === 'five') return 5;
     const saved = Number(localStorage.getItem(PLAN_KEY));
