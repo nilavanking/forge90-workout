@@ -364,8 +364,10 @@
     injectStyle();
     document.addEventListener('click', capturePlanSelection, true);
     document.addEventListener('click', captureFinish, true);
+    document.addEventListener('change', scheduleRender, true);
     new MutationObserver(scheduleRender).observe(document.documentElement, { childList:true, subtree:true });
     scheduleRender();
+    setTimeout(() => { renderGymAddons(); renderHomeCoreCards(); }, 500);
     if (sessionStorage.getItem(RETURN_HOME_KEY) === '1') setTimeout(returnHome, 300);
     console.info(`[Forge90] enhancements ${VERSION} loaded; original workout data remains untouched.`);
   }
