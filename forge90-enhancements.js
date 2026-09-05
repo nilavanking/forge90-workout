@@ -341,8 +341,12 @@
 
   let renderTimer;
   function scheduleRender() {
-    clearTimeout(renderTimer);
-    renderTimer = setTimeout(() => { renderGymAddons(); renderHomeCoreCards(); }, 80);
+    if (renderTimer) return;
+    renderTimer = setTimeout(() => {
+      renderTimer = null;
+      renderGymAddons();
+      renderHomeCoreCards();
+    }, 80);
   }
 
   function init() {
