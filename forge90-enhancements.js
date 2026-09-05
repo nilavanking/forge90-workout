@@ -154,7 +154,7 @@
   function findFinishButton() {
     return [...document.querySelectorAll('button,a,[role="button"]')].find(el => {
       const t = text(el).toLowerCase();
-      return t.includes('finish') && t.includes('report');
+      return el.offsetParent !== null && t.includes('finish') && t.includes('report');
     }) || null;
   }
 

@@ -50,7 +50,7 @@
       $('weightGoalBtn').onclick=editGoal;$('weightFilters').onclick=e=>{const b=e.target.closest('[data-days]');if(b){filterDays=Number(b.dataset.days);render();}};
     }
   }
-  function openWeight(){$('[data-view="progressView"]')?.click();setTimeout(()=>$('weightPanel')?.scrollIntoView({behavior:'smooth'}),50);}
+  function openWeight(){document.querySelector('[data-view="progressView"]')?.click();setTimeout(()=>$('weightPanel')?.scrollIntoView({behavior:'smooth'}),50);}
   function editGoal(){
     const s=prompt('Starting weight (kg)',valid(data.startWeightKg)?data.startWeightKg:'');if(s===null)return;
     const t=prompt('Target weight (kg)',valid(data.targetWeightKg)?data.targetWeightKg:'98');if(t===null)return;
