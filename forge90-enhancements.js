@@ -129,6 +129,9 @@
   }
 
   function inferPlanMode() {
+    const selectedMode = document.getElementById('weekMode')?.value || document.getElementById('homeWeekMode')?.value;
+    if (selectedMode === 'four') return 4;
+    if (selectedMode === 'five') return 5;
     const saved = Number(localStorage.getItem(PLAN_KEY));
     if (saved === 4 || saved === 5) return saved;
     const b = text(document.body).toLowerCase();
@@ -140,6 +143,8 @@
   }
 
   function inferDay() {
+    const workoutSelect = document.getElementById('workoutSelect');
+    if (workoutSelect && workoutSelect.selectedIndex >= 0) return workoutSelect.selectedIndex + 1;
     const selectors = ['h1','h2','h3','[class*=title]','[class*=heading]','main'];
     for (const sel of selectors) {
       for (const el of document.querySelectorAll(sel)) {
@@ -259,16 +264,22 @@
   }
 
   function renderHomeCoreCards() {
-    if (findFinishButton() || document.getElementById('forge90-home-core-section')) return;
+    if (findFinishButton()) return;
+    const homeView = document.getElementById('homeView');
+    if (homeView && !homeView.classList.contains('active')) return;
     const plan = inferPlanMode();
     if (!HOME[plan]) return;
+    const current = document.getElementById('forge90-home-core-section');
+    if (current?.dataset.plan === String(plan)) return;
+    current?.remove();
     const bodyText = text(document.body).toLowerCase();
     if (!/workout|forge90|forge 90/.test(bodyText)) return;
 
     const hostCandidates = [...document.querySelectorAll('main,section,[class*=container],[class*=content],body')];
-    const host = hostCandidates.find(el => /4[ -]?day|5[ -]?day|workout plan|today|start workout/i.test(text(el))) || document.querySelector('main') || document.body;
+    const host = homeView || hostCandidates.find(el => /4[ -]?day|5[ -]?day|workout plan|today|start workout/i.test(text(el))) || document.querySelector('main') || document.body;
     const section = document.createElement('section');
     section.id = 'forge90-home-core-section';
+    section.dataset.plan = String(plan);
     section.className = 'f90x-card';
     section.innerHTML = `<h3>Home Core Sessions</h3><div class="f90x-muted">${plan === 5 ? '5-day mode: 1 full home core session.' : '4-day mode: 2 home core sessions.'}</div><div class="f90x-home-grid"></div>`;
     const grid = section.querySelector('.f90x-home-grid');
