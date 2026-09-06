@@ -187,6 +187,7 @@
       actions.append(add,remove);card.appendChild(actions);wrap.appendChild(card);
     });
     renderLiveTotals();
+    window.dispatchEvent(new CustomEvent('forge90-workout-render'));
   }
 
   function persistActiveInputs(){
@@ -227,13 +228,18 @@
     persistActiveInputs();
     const aw=state.activeWorkout; const t=totals(aw); const plan=plans[aw.mode][aw.index];
     if(t.sets===0){alert('Complete at least one set before finishing the workout.');return;}
+    if(window.Forge90Conditioning && !window.Forge90Conditioning.canFinish()) return;
     const record={
       id:aw.id,date:aw.date,completedAt:new Date().toISOString(),mode:aw.mode,day:plan.day,name:plan.name,focus:plan.focus,
       bodyWeight:aw.bodyWeight,duration:aw.duration,cardioMinutes:aw.cardioMinutes,cardioIntensity:aw.cardioIntensity,
       sets:t.sets,reps:t.reps,volume:Math.round(t.volume),calories:calorieEstimate(aw),completedExercises:t.completedExercises,totalExercises:aw.logs.length,
       exercises:aw.logs.map(log=>({name:log.name,target:log.target,sets:log.sets.filter(s=>s.done).map(s=>({weight:Number(s.weight)||0,reps:Number(s.reps)||0}))})).filter(x=>x.sets.length)
     };
-    state.workouts.unshift(record); state.activeWorkout=null; saveState(); openReport(record); renderHome(); renderHistory();
+    window.Forge90Session?.finalize();
+    window.Forge90Conditioning?.finish(record);
+    state.workouts.unshift(record); state.activeWorkout=null; saveState();
+    window.dispatchEvent(new CustomEvent('forge90-workout-saved',{detail:{id:record.id}}));
+    openReport(record); renderHome(); renderHistory();
   }
 
   function openGuide(key,name){
@@ -250,6 +256,7 @@
       const d=document.createElement('div');d.className='history-item';d.innerHTML=`<strong>${escapeHtml(ex.name)}</strong><div class="history-meta">${ex.sets.length} sets · ${fmtNum(vol)} kg volume · best ${best.weight} kg × ${best.reps}</div>`;details.appendChild(d);
     });
     $('reportGuidance').textContent=record.completedExercises===record.totalExercises?'If technique stayed controlled and you reached the top of the target rep range, increase the load slightly next time. Otherwise keep the same weight and aim for one or two more clean reps.':'Complete the missing planned exercises next time before increasing overall training volume.';
+    window.Forge90Conditioning?.report(record);
     $('reportDialog').showModal();
   }
 
@@ -307,7 +314,7 @@
   function escapeHtml(value){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view)));
-  $('startWorkoutBtn').addEventListener('click',()=>{const mode=state.settings.weekMode;const index=chooseTodayWorkout(mode);state.activeWorkout=createWorkout(mode,index);saveState();showView('workoutView');});
+  $('startWorkoutBtn').addEventListener('click',()=>{if(!state.activeWorkout){const mode=state.settings.weekMode;const index=chooseTodayWorkout(mode);state.activeWorkout=createWorkout(mode,index);saveState();}showView('workoutView');});
   $('quickProgressBtn').addEventListener('click',()=>showView('progressView'));
   $('homeWeekMode').addEventListener('change',e=>{state.settings.weekMode=e.target.value;saveState();renderHome();});
   $('weekMode').addEventListener('change',e=>{if(confirm('Changing week mode will reset the current workout. Continue?')) changeWorkoutMode(e.target.value);else e.target.value=state.activeWorkout.mode;});
@@ -323,5 +330,6 @@
     else window.addEventListener('load',registerServiceWorker,{once:true});
   }
 
+  window.Forge90App = Object.freeze({getActive:()=>state.activeWorkout ? {...clone(state.activeWorkout),...clone({name:plans[state.activeWorkout.mode][state.activeWorkout.index].name,focus:plans[state.activeWorkout.mode][state.activeWorkout.index].focus})}:null});
   renderHome();
 })();
