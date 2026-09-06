@@ -121,3 +121,17 @@ console errors.
 
 All requested migration regression gates are now verified. PR #1 remains Draft and
 production remains unchanged pending explicit production-cutover approval.
+
+## Workout-detail layout correction — 6 September 2026
+
+A user screenshot exposed that `forge90-gym-addons` was inserted inside the sticky
+four-cell workout summary bar. On a wide browser this expanded the summary grid and
+made the original exercise details appear hidden or blank.
+
+The add-on section is now inserted as a sibling immediately before the summary bar.
+The browser regression verifies eight original exercises remain rendered at full
+mobile width, the add-on section belongs directly to `workoutView`, it is not inside
+the summary bar, and the summary bar retains exactly four children. The PWA cache
+was versioned to `forge90-v20260906-layout-1` so installed clients receive the
+correction. Storage, static assets, JavaScript syntax, installability and offline
+reload tests all passed after the change.

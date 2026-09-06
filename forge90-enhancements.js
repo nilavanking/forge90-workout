@@ -187,7 +187,11 @@
     if (!day || !GYM[plan]?.[day]) return;
     const marker = `${plan}:${day}`;
     const current = document.getElementById('forge90-gym-addons');
-    if (current?.dataset.marker === marker) return;
+    const liveBar = finish.closest('.live-bar');
+    if (current?.dataset.marker === marker) {
+      if (liveBar && current.parentElement === liveBar) liveBar.insertAdjacentElement('beforebegin', current);
+      return;
+    }
     current?.remove();
 
     const logs = getLogs();
@@ -224,7 +228,8 @@
       }
       list.appendChild(row);
     });
-    finish.parentElement?.insertBefore(box, finish);
+    if (liveBar) liveBar.insertAdjacentElement('beforebegin', box);
+    else finish.parentElement?.insertBefore(box, finish);
   }
 
   function saveGymAddonHistory() {

@@ -64,18 +64,38 @@ const server = http.createServer((request, response) => {
     assert.equal(online.active, 'activated');
     assert.equal(online.overflow, false);
     assert.ok(online.manifest.endsWith('/manifest.webmanifest'));
-    assert.ok(online.names.includes('forge90-v20260902-weight-1'));
+    assert.ok(online.names.includes('forge90-v20260906-layout-1'));
     const appManifest = await cdp.send('Page.getAppManifest');
     const installability = await cdp.send('Page.getInstallabilityErrors');
     assert.ok(appManifest.data.includes('Forge90 Personal Gym Coach'));
     assert.deepEqual(installability.installabilityErrors, []);
-    const cached = online.entries['forge90-v20260902-weight-1'];
+    const cached = online.entries['forge90-v20260906-layout-1'];
     for (const asset of ['/', '/index.html', '/styles.css', '/app.js', '/vendor/dexie.min.js',
       '/forge90-storage.js', '/forge90-base-app.js', '/forge90-session-controls.js',
       '/forge90-enhancements.js', '/forge90-weight.js', '/manifest.webmanifest',
       '/icons/forge90-logo.png', '/icons/icon-192.png', '/icons/icon-512.png']) {
       assert.ok(cached.includes(asset), `missing cached asset ${asset}`);
     }
+
+    await page.click('#startWorkoutBtn');
+    await page.waitForSelector('#forge90-gym-addons');
+    const workoutLayout = await page.evaluate(() => {
+      const exercises = document.getElementById('exerciseCards');
+      const addons = document.getElementById('forge90-gym-addons');
+      const liveBar = document.querySelector('#workoutView .live-bar');
+      return {
+        exerciseCount: exercises.children.length,
+        exerciseWidth: exercises.getBoundingClientRect().width,
+        addonsParent: addons.parentElement.id,
+        addonsInsideLiveBar: liveBar.contains(addons),
+        liveBarChildren: liveBar.children.length
+      };
+    });
+    assert.ok(workoutLayout.exerciseCount > 0);
+    assert.ok(workoutLayout.exerciseWidth > 300);
+    assert.equal(workoutLayout.addonsParent, 'workoutView');
+    assert.equal(workoutLayout.addonsInsideLiveBar, false);
+    assert.equal(workoutLayout.liveBarChildren, 4);
 
     await context.setOffline(true);
     await page.reload({waitUntil: 'domcontentloaded'});
@@ -97,7 +117,7 @@ const server = http.createServer((request, response) => {
     assert.deepEqual(errors, []);
 
     console.log('PWA_OFFLINE_BROWSER_REGRESSION=PASS');
-    console.log(JSON.stringify({online, installability, offline}, null, 2));
+    console.log(JSON.stringify({online, installability, workoutLayout, offline}, null, 2));
   } finally {
     await context.setOffline(false).catch(() => {});
     await browser.close();
