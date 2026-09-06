@@ -149,3 +149,8 @@ reps, completed a set with the combined button, confirmed the hidden completion
 state and 60-second rest timer, then verified Pause, +15s, -15s, Resume and Skip all
 changed the underlying session state correctly. The cache was versioned to
 `forge90-v20260906-controls-1` so installed clients receive the update.
+
+The user selected the compact-button presentation. The visible labels are now
+`Start`, `Complete` and `Done`. Browser geometry checks confirm every state remains
+exactly 82 x 44 pixels, stays on one line and remains within its reserved set-row
+column. The updated PWA cache is `forge90-v20260906-compact-buttons-1`.

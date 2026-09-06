@@ -64,12 +64,12 @@ const server = http.createServer((request, response) => {
     assert.equal(online.active, 'activated');
     assert.equal(online.overflow, false);
     assert.ok(online.manifest.endsWith('/manifest.webmanifest'));
-    assert.ok(online.names.includes('forge90-v20260906-controls-1'));
+    assert.ok(online.names.includes('forge90-v20260906-compact-buttons-1'));
     const appManifest = await cdp.send('Page.getAppManifest');
     const installability = await cdp.send('Page.getInstallabilityErrors');
     assert.ok(appManifest.data.includes('Forge90 Personal Gym Coach'));
     assert.deepEqual(installability.installabilityErrors, []);
-    const cached = online.entries['forge90-v20260906-controls-1'];
+    const cached = online.entries['forge90-v20260906-compact-buttons-1'];
     for (const asset of ['/', '/index.html', '/styles.css', '/app.js', '/vendor/dexie.min.js',
       '/forge90-storage.js', '/forge90-base-app.js', '/forge90-session-controls.js',
       '/forge90-enhancements.js', '/forge90-weight.js', '/manifest.webmanifest',
@@ -99,13 +99,24 @@ const server = http.createServer((request, response) => {
 
     const firstSet = page.locator('.exercise-card').first().locator('.set-row').first();
     const setButton = firstSet.locator('.f90v2-start');
+    const buttonBox = () => setButton.evaluate(button => {
+      const box = button.getBoundingClientRect();
+      const row = button.closest('.set-row').getBoundingClientRect();
+      return {width:box.width,height:box.height,inside:box.left >= row.left && box.right <= row.right + 1};
+    });
     await firstSet.locator('input[type="number"]').nth(0).fill('10');
     await firstSet.locator('input[type="number"]').nth(1).fill('8');
-    assert.equal(await setButton.textContent(), 'Start Set');
+    assert.equal(await setButton.textContent(), 'Start');
+    const startBox = await buttonBox();
     await setButton.click();
-    assert.equal(await setButton.textContent(), 'Complete Set');
+    assert.equal(await setButton.textContent(), 'Complete');
+    const completeBox = await buttonBox();
     await setButton.click();
-    assert.equal(await setButton.textContent(), 'Completed');
+    assert.equal(await setButton.textContent(), 'Done');
+    const doneBox = await buttonBox();
+    assert.deepEqual(startBox, {width:82,height:44,inside:true});
+    assert.deepEqual(completeBox, startBox);
+    assert.deepEqual(doneBox, startBox);
     assert.equal(await setButton.isDisabled(), true);
     const hiddenCheck = firstSet.locator('input[type="checkbox"]');
     assert.equal(await hiddenCheck.isChecked(), true);
@@ -126,7 +137,7 @@ const server = http.createServer((request, response) => {
     assert.equal((await page.evaluate(() => window.Forge90Session.getState().timer)).paused, false);
     await page.click('[data-f90="skip"]');
     assert.equal((await page.evaluate(() => window.Forge90Session.getState())).timer, null);
-    const sessionControls = {combinedButton:true, pause:true, plus15:true, minus15:true, resume:true, skip:true};
+    const sessionControls = {combinedButton:true, fixedButtonBox:startBox, pause:true, plus15:true, minus15:true, resume:true, skip:true};
 
     await context.setOffline(true);
     await page.reload({waitUntil: 'domcontentloaded'});
