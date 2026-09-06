@@ -109,10 +109,10 @@
       return fallback;
     }
   };
-  const getLogs = () => safeParse(localStorage.getItem(LOG_KEY), {});
-  const setLogs = (v) => localStorage.setItem(LOG_KEY, JSON.stringify(v));
-  const getHistory = () => safeParse(localStorage.getItem(HISTORY_KEY), []);
-  const setHistory = (v) => localStorage.setItem(HISTORY_KEY, JSON.stringify(v));
+  const getLogs = () => safeParse(window.Forge90Storage.getItem(LOG_KEY), {});
+  const setLogs = (v) => window.Forge90Storage.setItem(LOG_KEY, JSON.stringify(v));
+  const getHistory = () => safeParse(window.Forge90Storage.getItem(HISTORY_KEY), []);
+  const setHistory = (v) => window.Forge90Storage.setItem(HISTORY_KEY, JSON.stringify(v));
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const text = (el) => (el && (el.innerText || el.textContent) || '').replace(/\s+/g, ' ').trim();
 
@@ -249,6 +249,8 @@
   }
 
   function findHomeControl() {
+    const nativeHome=document.querySelector('.nav-btn[data-view="homeView"]');
+    if(nativeHome)return nativeHome;
     const els = [...document.querySelectorAll('button,a,[role="button"],[aria-label]')];
     return els.find(el => {
       const t = text(el).trim().toLowerCase();
@@ -377,7 +379,11 @@
   function init() {
     injectStyle();
     document.addEventListener('click', capturePlanSelection, true);
-    document.addEventListener('click', captureFinish, true);
+    window.addEventListener('forge90-workout-saved', () => {
+      saveGymAddonHistory();
+      sessionStorage.setItem(RETURN_HOME_KEY, '1');
+      setTimeout(returnHome, 250);
+    });
     document.addEventListener('change', scheduleRender, true);
     new MutationObserver(scheduleRender).observe(document.documentElement, { childList:true, subtree:true });
     scheduleRender();
