@@ -64,12 +64,12 @@ const server = http.createServer((request, response) => {
     assert.equal(online.active, 'activated');
     assert.equal(online.overflow, false);
     assert.ok(online.manifest.endsWith('/manifest.webmanifest'));
-    assert.ok(online.names.includes('forge90-v20260906-layout-1'));
+    assert.ok(online.names.includes('forge90-v20260906-controls-1'));
     const appManifest = await cdp.send('Page.getAppManifest');
     const installability = await cdp.send('Page.getInstallabilityErrors');
     assert.ok(appManifest.data.includes('Forge90 Personal Gym Coach'));
     assert.deepEqual(installability.installabilityErrors, []);
-    const cached = online.entries['forge90-v20260906-layout-1'];
+    const cached = online.entries['forge90-v20260906-controls-1'];
     for (const asset of ['/', '/index.html', '/styles.css', '/app.js', '/vendor/dexie.min.js',
       '/forge90-storage.js', '/forge90-base-app.js', '/forge90-session-controls.js',
       '/forge90-enhancements.js', '/forge90-weight.js', '/manifest.webmanifest',
@@ -97,6 +97,37 @@ const server = http.createServer((request, response) => {
     assert.equal(workoutLayout.addonsInsideLiveBar, false);
     assert.equal(workoutLayout.liveBarChildren, 4);
 
+    const firstSet = page.locator('.exercise-card').first().locator('.set-row').first();
+    const setButton = firstSet.locator('.f90v2-start');
+    await firstSet.locator('input[type="number"]').nth(0).fill('10');
+    await firstSet.locator('input[type="number"]').nth(1).fill('8');
+    assert.equal(await setButton.textContent(), 'Start Set');
+    await setButton.click();
+    assert.equal(await setButton.textContent(), 'Complete Set');
+    await setButton.click();
+    assert.equal(await setButton.textContent(), 'Completed');
+    assert.equal(await setButton.isDisabled(), true);
+    const hiddenCheck = firstSet.locator('input[type="checkbox"]');
+    assert.equal(await hiddenCheck.isChecked(), true);
+    assert.equal(await hiddenCheck.getAttribute('aria-hidden'), 'true');
+    assert.equal((await page.evaluate(() => window.Forge90Session.getState())).timer.kind, 'set-rest');
+
+    await page.click('[data-f90="toggle"]');
+    const paused = await page.evaluate(() => window.Forge90Session.getState().timer);
+    assert.equal(paused.paused, true);
+    const pausedSeconds = Math.ceil(paused.remainingMs / 1000);
+    await page.click('[data-f90="plus"]');
+    const added = await page.evaluate(() => window.Forge90Session.getState().timer);
+    assert.ok(Math.ceil(added.remainingMs / 1000) >= pausedSeconds + 15);
+    await page.click('[data-f90="minus"]');
+    const reduced = await page.evaluate(() => window.Forge90Session.getState().timer);
+    assert.ok(Math.ceil(reduced.remainingMs / 1000) <= Math.ceil(added.remainingMs / 1000) - 15);
+    await page.click('[data-f90="toggle"]');
+    assert.equal((await page.evaluate(() => window.Forge90Session.getState().timer)).paused, false);
+    await page.click('[data-f90="skip"]');
+    assert.equal((await page.evaluate(() => window.Forge90Session.getState())).timer, null);
+    const sessionControls = {combinedButton:true, pause:true, plus15:true, minus15:true, resume:true, skip:true};
+
     await context.setOffline(true);
     await page.reload({waitUntil: 'domcontentloaded'});
     await page.waitForFunction(() => document.body.innerText.includes('Forge90'));
@@ -117,7 +148,7 @@ const server = http.createServer((request, response) => {
     assert.deepEqual(errors, []);
 
     console.log('PWA_OFFLINE_BROWSER_REGRESSION=PASS');
-    console.log(JSON.stringify({online, installability, workoutLayout, offline}, null, 2));
+    console.log(JSON.stringify({online, installability, workoutLayout, sessionControls, offline}, null, 2));
   } finally {
     await context.setOffline(false).catch(() => {});
     await browser.close();

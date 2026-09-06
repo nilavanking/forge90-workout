@@ -135,3 +135,17 @@ the summary bar, and the summary bar retains exactly four children. The PWA cach
 was versioned to `forge90-v20260906-layout-1` so installed clients receive the
 correction. Storage, static assets, JavaScript syntax, installability and offline
 reload tests all passed after the change.
+
+## Combined set button and rest controls — 6 September 2026
+
+Set completion now uses one visible control per set: `Start Set` changes to
+`Complete Set` while timing and then to a disabled green `Completed` state. The
+existing checkbox remains only as hidden compatibility state so workout totals,
+storage and reports continue using the established data path.
+
+The rest-control buttons are now created once per timer instead of being replaced
+every 500 milliseconds by the ticker. A Chromium regression entered weight and
+reps, completed a set with the combined button, confirmed the hidden completion
+state and 60-second rest timer, then verified Pause, +15s, -15s, Resume and Skip all
+changed the underlying session state correctly. The cache was versioned to
+`forge90-v20260906-controls-1` so installed clients receive the update.
