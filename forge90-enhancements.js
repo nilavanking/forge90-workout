@@ -204,28 +204,35 @@
     GYM[plan][day].forEach((ex, i) => {
       const k = keyFor(plan, day, i);
       const state = logs[k] || { sets: {} };
+      const setCount = Math.max(1, Math.min(10, Number(state.setCount) || ex.sets));
       const row = document.createElement('div');
       row.className = 'f90x-ex';
-      row.innerHTML = `<strong>${esc(ex.name)}</strong><div class="f90x-meta">${esc(ex.equipment)} • ${ex.sets} sets × ${esc(ex.reps)} • ${esc(ex.target)}</div><div class="f90x-sets"></div>`;
+      row.innerHTML = `<div class="exercise-head"><div><strong>${esc(ex.name)}</strong><div class="f90x-meta">Plan: ${setCount} sets × ${esc(ex.reps)} • ${esc(ex.target)}</div></div></div><div class="f90x-sets"></div>`;
       const setWrap = row.querySelector('.f90x-sets');
-      for (let s = 1; s <= ex.sets; s++) {
+      for (let s = 1; s <= setCount; s++) {
         const st = state.sets?.[s] || {};
         const set = document.createElement('label');
         set.className = 'f90x-set';
-        set.innerHTML = `<input type="checkbox" ${st.done ? 'checked' : ''} data-set="${s}"><span>S${s}</span><input class="f90x-weight" inputmode="decimal" placeholder="kg" value="${esc(st.weight ?? '')}" aria-label="${esc(ex.name)} set ${s} weight">`;
+        set.innerHTML = `<input type="checkbox" ${st.done ? 'checked' : ''} data-set="${s}"><span>S${s}</span><input class="f90x-weight" type="number" min="0" step="0.5" inputmode="decimal" placeholder="kg" value="${esc(st.weight ?? '')}" aria-label="${esc(ex.name)} set ${s} weight"><input class="f90x-reps" type="number" min="0" step="1" inputmode="numeric" placeholder="reps" value="${esc(st.reps ?? '')}" aria-label="${esc(ex.name)} set ${s} reps">`;
         const checkbox = set.querySelector('input[type=checkbox]');
         const weight = set.querySelector('.f90x-weight');
+        const reps = set.querySelector('.f90x-reps');
         const persist = () => {
           const all = getLogs();
           all[k] ||= { name: ex.name, plan, day, sets: {} };
-          all[k].name = ex.name; all[k].plan = plan; all[k].day = day; all[k].reps = ex.reps;
-          all[k].sets[s] = { done: checkbox.checked, weight: weight.value };
+          all[k].name = ex.name; all[k].plan = plan; all[k].day = day; all[k].reps = ex.reps; all[k].setCount = setCount;
+          all[k].sets[s] = { done: checkbox.checked, weight: weight.value, reps: reps.value };
           setLogs(all);
         };
         checkbox.addEventListener('change', persist);
         weight.addEventListener('input', persist);
+        reps.addEventListener('input', persist);
         setWrap.appendChild(set);
       }
+      const actions=document.createElement('div');actions.className='exercise-actions';actions.innerHTML='<button class="ghost-btn" type="button" data-add>+ Add Set</button><button class="ghost-btn" type="button" data-remove>Remove Set</button>';
+      actions.querySelector('[data-remove]').disabled=setCount<=1;
+      actions.onclick=e=>{const delta=e.target.closest('[data-add]')?1:e.target.closest('[data-remove]')?-1:0;if(!delta)return;const all=getLogs();all[k]||={name:ex.name,plan,day,sets:{}};all[k].setCount=Math.max(1,Math.min(10,setCount+delta));if(delta<0)delete all[k].sets[setCount];setLogs(all);box.remove();renderGymAddons();};
+      row.appendChild(actions);
       list.appendChild(row);
     });
     if (liveBar) liveBar.insertAdjacentElement('beforebegin', box);

@@ -72,6 +72,11 @@
   function controlRow(kind, index = '') {
     return `<div class="f90c-controls">${button('start', 'Start', kind, index)}${button('pause', 'Pause', kind, index)}${button('resume', 'Resume', kind, index)}${kind === 'warmup' ? button('complete', 'Complete', kind, index) : ''}${button('stop', 'Stop', kind, index)}${button('plus', kind === 'cardio' ? '+5 MIN' : '+1 MIN', kind, index)}${button('minus', kind === 'cardio' ? '−5 MIN' : '−1 MIN', kind, index)}${button('skip', 'Skip', kind, index)}${button('safety', 'Back discomfort?', kind, index)}</div>`;
   }
+  function accordion(node,label,summary,open=false){
+    const body=document.createElement('div');body.className='f90c-accordion-body';while(node.firstChild)body.appendChild(node.firstChild);
+    const head=document.createElement('button');head.type='button';head.className='f90c-accordion-head';head.setAttribute('aria-expanded',String(open));head.setAttribute('aria-controls',`${node.id||`f90c-${label.toLowerCase()}`}-body`);head.innerHTML=`<span><strong>${esc(label)}</strong><small>${esc(summary)}</small></span><span data-c-accordion-status>Not Started</span><b aria-hidden="true">${open?'▲':'▼'}</b>`;
+    body.id=head.getAttribute('aria-controls');body.hidden=!open;head.onclick=()=>{const next=head.getAttribute('aria-expanded')!=='true';head.setAttribute('aria-expanded',String(next));body.hidden=!next;head.querySelector('b').textContent=next?'▲':'▼';};node.append(head,body);return head;
+  }
   function render() {
     if (!session) return;
     ['f90c-warmup','f90c-cardio','f90c-cooldown'].forEach(id => $(id)?.remove());
@@ -82,11 +87,16 @@
       const card = document.createElement('article'); card.className = 'f90c-movement'; card.dataset.warmupIndex = i;
       card.innerHTML = `<span class="eyebrow">WARM-UP ${i + 1}</span><h3>${esc(a.name)}</h3><p>${esc(a.purpose)}</p><p class="muted">${esc(a.muscles)} · ${esc(a.equipment)}</p><p>${a.sets} set · ${a.reps ? esc(a.reps) + ' · ' : ''}${a.minutes} min preparation window</p><details><summary>How to do it</summary><ol>${a.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></details>${a.band ? `<label>Band level <select class="select" data-c-band="${i}">${['Light','Medium','Heavy'].map(b => `<option ${a.band === b ? 'selected' : ''}>${b}</option>`).join('')}</select></label>` : ''}${a.loadKey ? `<label>Light preparation load (kg, optional)<input class="input" type="number" min="0" max="1000" step="0.5" data-c-load="${i}" value="${a.load ?? ''}"></label><p class="fine-print">${a.load != null ? `Suggested ${a.load} kg from 40% of the entered working load.` : 'Use a light load; approximately 30–50% of your normal working weight. No working weight is assumed.'}</p>` : ''}<p class="f90c-status" data-c-status="warmup:${i}" role="status"></p>${controlRow('warmup', i) + button('substitute','Substitute movement','warmup',i)}`;
       warm.querySelector('.f90c-movements').append(card);
+      const head=accordion(card,`${i+1} ${a.name}`,`${a.minutes}:00${a.reps?` · ${a.reps} reps`:''} · ${a.equipment}`,['Running','Paused'].includes(a.status)||(!i&&a.status==='Not Started'));
+      head.dataset.cActivityStatus=`warmup:${i}`;
     });
     const cardio = document.createElement('section'); cardio.id = 'f90c-cardio'; cardio.className = 'card f90c-section';
     cardio.innerHTML = `<span class="eyebrow">CARDIO</span><h2>Cardio Recommendation for Today</h2><p data-c-recommendation></p><p class="fine-print">Original recommendation: ${session.originalRecommendation.minutes} min · ${esc(C.machines[session.originalRecommendation.machine].name)}. You can choose another machine.</p><label>How tired do your legs feel?<select class="select" id="f90c-fatigue"><option value="normal" ${session.fatigue === 'normal' ? 'selected' : ''}>Normal / not specified</option><option value="high" ${session.fatigue === 'high' ? 'selected' : ''}>High fatigue</option></select></label>${button('recommendation', 'Use today’s recommendation', 'cardio')}<label>Cardio machine<select class="select" id="f90c-machine">${Object.entries(C.machines).map(([k,m]) => `<option value="${k}" ${session.cardio.machine === k ? 'selected' : ''}>${m.name}</option>`).join('')}</select></label><p class="muted">Purpose: build moderate aerobic endurance after strength and core work.</p><p id="f90c-how"></p><div id="f90c-settings" class="form-grid"></div><label>Actual effort (RPE 1–10, optional)<input class="input" id="f90c-rpe" type="number" min="1" max="10" step="1" value="${session.cardio.rpe}"></label><div class="report-grid" id="f90c-cardio-metrics"></div><p class="f90c-status" data-c-status="cardio:" role="status"></p>${controlRow('cardio')}${button('substitute', 'Machine unavailable / Substitute', 'cardio')}<p id="f90c-notice" role="status"></p>`;
     const cool = document.createElement('section'); cool.id = 'f90c-cooldown'; cool.className = 'card f90c-section';
     cool.innerHTML = `<span class="eyebrow">COOLDOWN</span><h2>Ease down before finishing</h2><p data-c-phase-plan></p><p data-c-cooldown role="status"></p><p class="muted">The final cardio phase is included in cardio actual time. Reduce speed or resistance gradually. Optional recovery below is additional; gentle walking or seated breathing is enough.</p><h3>Optional 3–5 minute recovery</h3><p class="f90c-status" data-c-status="recovery:" role="status"></p>${controlRow('recovery')}`;
+    const warmHead=accordion(warm,'Warm-up',`${session.warmup.reduce((n,a)=>n+a.minutes,0)}:00 total · ${session.warmup.length} movements`,true);warmHead.dataset.cPhaseStatus='warmup';
+    const cardioHead=accordion(cardio,'Cardio',`${Math.round(session.cardio.targetMs/C.MINUTE)}:00 target · ${C.machines[session.cardio.machine].name}`,false);cardioHead.dataset.cPhaseStatus='cardio';
+    const coolHead=accordion(cool,'Cooldown / Recovery','Final cardio cooldown + optional 3–5 min recovery',false);coolHead.dataset.cPhaseStatus='recovery';
     $('exerciseCards').before(warm); $('workoutView').append(cardio,cool);
     settings(); place(); tick();
   }
@@ -134,6 +144,8 @@
     const s = summary(now), r = recommendation();
     text('[data-c-total]', fmt(s.totalMs));
     text('[data-c-warmup-summary]', `${s.warmupStatus} · ${fmt(s.warmupMs)} warm-up completed`);
+    document.querySelectorAll('[data-c-activity-status]').forEach(head=>{const [kind,index]=head.dataset.cActivityStatus.split(':');const item=getActivity(kind,index);const out=head.querySelector('[data-c-accordion-status]');if(out)out.textContent=item.status;});
+    const phaseStatus={warmup:s.warmupStatus,cardio:s.cardioStatus,recovery:session.recovery.status};document.querySelectorAll('[data-c-phase-status]').forEach(head=>{const out=head.querySelector('[data-c-accordion-status]');if(out)out.textContent=phaseStatus[head.dataset.cPhaseStatus]||'Not Started';});
     text('[data-c-session-state]', session.paused ? 'Session paused' : session.clock ? `${session.clock.phase === 'core' ? 'Core / hips / glutes' : 'Strength'} timing` : 'Activity timing');
     text('[data-c-recommendation]', `${r.minutes} min · ${C.machines[r.machine].name} · RPE ${r.rpe}. ${r.reason} Completed workload: ${r.completedSets} sets (${r.completedLegSets} leg sets). ${r.progression}`);
     activities().forEach((item,index) => {

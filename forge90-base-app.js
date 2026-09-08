@@ -166,7 +166,7 @@
     aw.logs.forEach((log,exerciseIndex)=>{
       const card=document.createElement('article'); card.className='exercise-card';
       const head=document.createElement('div'); head.className='exercise-head';
-      const title=document.createElement('div'); title.innerHTML=`<strong>${escapeHtml(log.name)}</strong><div class="target">Target: ${escapeHtml(log.target)}</div>`;
+      const title=document.createElement('div'); title.innerHTML=`<strong>${escapeHtml(log.name)}</strong><div class="target">Plan: ${escapeHtml(log.target).replace(' × ',' sets × ')} reps</div>`;
       const guide=document.createElement('button'); guide.type='button'; guide.className='ghost-btn guide-btn'; guide.textContent='How to do it'; guide.addEventListener('click',()=>openGuide(log.key,log.name));
       head.append(title,guide); card.appendChild(head);
       const table=document.createElement('div'); table.className='set-table';
