@@ -1,0 +1,33 @@
+{
+  "baseline": "36efdecce7cec2cf466829ef11cc6e7f502cc58a",
+  "checks": [
+    "legacy app loaded with realistic pre-update data",
+    "all legacy records byte-for-byte preserved in localStorage and IndexedDB",
+    "old workout reports remain readable",
+    "Home Core Day A preserved and mobile screenshot captured",
+    "Home Core Day B preserved and mobile screenshot captured",
+    "5-day-Day-1: original exercises/sets/reps and exact section order",
+    "5-day-leg-day: original exercises/sets/reps and exact section order",
+    "4-day-upper: original exercises/sets/reps and exact section order",
+    "4-day-lower: original exercises/sets/reps and exact section order",
+    "5-day-Pull: original exercises/sets/reps and exact section order",
+    "5-day-Upper-Shape: original exercises/sets/reps and exact section order",
+    "5-day-Lower-Shoulders: original exercises/sets/reps and exact section order",
+    "4-day-Upper-B: original exercises/sets/reps and exact section order",
+    "4-day-Lower-B: original exercises/sets/reps and exact section order",
+    "warm-up pause/resume/complete excludes weights and avoids generic double timer",
+    "individual warm-up adjustments and structured skip reason",
+    "cardio controls and stop capture actual 12/20 minutes immediately",
+    "total session pause excludes pause time and core work has separate duration",
+    "extended saved report includes actual metrics and preserved strength volume",
+    "running session survives refresh and Start Workout resumes it",
+    "safety pause and substitution require deliberate continuation",
+    "machine unavailable substitution and settings tracking",
+    "cooldown phase and optional recovery complete with bounded actual duration",
+    "audio and vibration failures degrade safely",
+    "cardio minimum target and Skipped remain distinct from Completed",
+    "no blocking browser console or page errors"
+  ],
+  "errors": [],
+  "result": "PASS"
+}

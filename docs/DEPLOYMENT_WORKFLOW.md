@@ -1,53 +1,35 @@
-# Forge90 Deployment Workflow
+# Forge90 GitHub -> Netlify Release Workflow
 
-## Target workflow
+## Source of truth
+GitHub is the authoritative source once the initial migration release gate is complete. The production branch is `main`.
 
-1. Create a feature branch from `main`.
-2. Implement only the approved Forge90 change.
-3. Run functional and data-preservation tests.
-4. Review the change and confirm the test evidence.
-5. Merge the approved branch into `main`.
-6. Netlify automatically deploys `main` to the production project `forge90-workout`.
-7. Verify the production deployment after Netlify reports success.
+## Normal feature workflow
+1. Start from the latest `main`.
+2. Create a dedicated feature/fix branch.
+3. Implement the requested Forge90 change.
+4. Run syntax/static checks and feature-specific tests.
+5. Verify existing workout/history data is preserved when persistence is touched.
+6. Review the change in a Netlify deploy preview or equivalent test environment.
+7. Open/update the pull request.
+8. Merge only after the release checks pass.
+9. Netlify deploys the merged `main` commit to production automatically.
+10. Verify the production deployment and the key user flow after deploy.
 
-## Mandatory pre-merge checks
+## Initial migration exception
+The existing Netlify production project predates the GitHub repository and is currently upload/API deployed. Until the repository reproduces the complete approved app, production stays on that deployment.
 
-At minimum, verify the affected flows and confirm that existing browser/device data survives the update. For workout-related changes, include relevant checks for:
+The migration branch is `migration/netlify-baseline`. Draft PR #1 is the controlled migration PR.
 
-- 4-day and 5-day workout selection
-- exercise rendering and workout navigation
-- set completion, weight and rep logging
-- Finish & Report behavior
-- workout history/report preservation
-- core/hips/glutes supplemental work when affected
-- home-core sessions when affected
-- weight tracking when affected
-- IndexedDB/Dexie migration when affected
-- PWA/service-worker behavior when affected
-- mobile layout and interaction
+## Required migration release gates
+- Complete self-contained application source in GitHub.
+- IndexedDB/Dexie migration verified against legacy localStorage data.
+- Existing workout/history data preserved.
+- 4-day and 5-day workout plans preserved.
+- Core/hips/glutes and Home Core additions preserved.
+- v2 equipment selector, equipment-specific last weight and active-set/session-control behavior reconciled with the IndexedDB storage adapter.
+- Weight Journey feature reconciled.
+- Timers, reports and PWA/offline behavior verified.
+- Netlify preview verified before production cutover.
 
-## Production data protection
-
-Never clear localStorage, IndexedDB, Cache Storage, or other browser data as a deployment shortcut. Schema changes require an explicit forward migration and verification. Do not silently reset a user's workout history or weight history.
-
-## Initial migration gate
-
-The existing Netlify site was previously deployed by upload/API rather than Git continuous deployment. The current 1 Sep production patch also depends on an immutable 31 Aug Forge90 base deployment. Therefore GitHub must not replace production until the full deployed source is captured and reconciled.
-
-The migration is complete only when:
-
-- the full production source exists in GitHub;
-- the app runs without relying on an undocumented external deployment dependency, or that dependency is intentionally documented and accepted;
-- current production behavior is regression-tested;
-- existing local browser data is preserved;
-- a preview deployment passes;
-- Netlify is connected to this repository with `main` as the production branch.
-
-## Branch policy
-
-- `main`: production-ready only
-- `migration/*`: source reconciliation and initial migration
-- `feature/*`: normal feature development
-- `fix/*`: bug fixes
-
-Normal development should not use manual ZIP deployment after Git continuous deployment is activated. ZIP packages may still be retained as backup/release artifacts.
+## Production safety
+Never use an incomplete branch as the Netlify production source. Do not clear site/browser data during migration testing. Manual ZIP deployment is retained only as an emergency rollback path after Git-based deployment becomes authoritative.

@@ -1,0 +1,12 @@
+{
+  "url": "https://6a9d9a884d406f1c3b466640--forge90-workout.netlify.app",
+  "result": "PASS",
+  "assets": 18,
+  "modes": [
+    "four",
+    "five"
+  ],
+  "legacyFixturePreserved": true,
+  "stopAndReload": true,
+  "errors": []
+}

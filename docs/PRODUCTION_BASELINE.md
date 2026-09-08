@@ -1,39 +1,22 @@
-# Forge90 Production Baseline Record
+# Forge90 Production Baseline
 
-Baseline capture date: 2 Sep 2026
+## Live site
+- Netlify project: `forge90-workout`
+- Site ID: `3271c276-0600-443e-a9fd-790d85529e94`
+- Production URL: `https://forge90-workout.netlify.app`
 
-## Existing Netlify production
-
-Project: `forge90-workout`
-
-Site ID: `3271c276-0600-443e-a9fd-790d85529e94`
-
-Current production deploy observed during migration:
-
+## Current deployed release before Git cutover
 - Deploy ID: `6a96f304d5810c17173f3788`
-- State: ready
-- Context: production
-- Deploy source: API/upload
-- Git commit reference: none
-- Deployment title: `Deploy triggered by upload`
-- Source ZIP present in Netlify deploy metadata: yes
+- Status: `ready`
+- Deployment method: upload/API deployment, not Git-based
+- Deployed 1 September 2026
 
-## Known production patch architecture
+The live release uses a preservation loader that references the immutable 31 August deployment for the original application and layers the approved enhancement patch over it.
 
-The current 1 Sep patch preserves the 31 Aug Forge90 application by loading the immutable base `app.js` from:
+## Migration evidence received 2 September 2026
+A complete Phase 1 IndexedDB/Dexie site candidate was received and statically verified. Three 1 September update packages were also audited, including the v2 session-controls package.
 
-`https://6a95c0aec7213e910fe6ad1d--forge90-workout.netlify.app/app.js`
+The Phase 1 package removes the JavaScript dependency on the immutable 31 August base by including `forge90-base-app.js`, but it is not yet approved as production because the v2 equipment/active-set controls must be reconciled and the Weight Journey package is still pending.
 
-It then loads `forge90-enhancements.js` from the current origin.
-
-Known enhancement scope:
-
-- core/hips/glutes/adductor/abductor gym add-ons for 4-day and 5-day plans
-- home core sessions
-- supplemental add-on history
-- Finish & Report return-to-home behavior
-- local workout-data preservation
-
-## Migration warning
-
-This record is intentionally stored before enabling Git-based production deployment. Connecting an incomplete repository to Netlify could publish a partial app. The full uploaded production source must be reconciled before the GitHub-to-Netlify production link is enabled.
+## Production rule
+The existing live Netlify deployment remains untouched until the GitHub candidate is demonstrably feature-complete, data-safe and preview-tested. The production Netlify project must not be connected to `main` before that release gate passes.
