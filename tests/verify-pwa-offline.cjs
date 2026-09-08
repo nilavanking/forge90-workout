@@ -64,15 +64,15 @@ const server = http.createServer((request, response) => {
     assert.equal(online.active, 'activated');
     assert.equal(online.overflow, false);
     assert.ok(online.manifest.endsWith('/manifest.webmanifest'));
-    assert.ok(online.names.includes('forge90-v20260906-conditioning-1'));
+    assert.ok(online.names.includes('forge90-v20260908-workout-ui-1'));
     const appManifest = await cdp.send('Page.getAppManifest');
     const installability = await cdp.send('Page.getInstallabilityErrors');
     assert.ok(appManifest.data.includes('Forge90 Personal Gym Coach'));
     assert.deepEqual(installability.installabilityErrors, []);
-    const cached = online.entries['forge90-v20260906-conditioning-1'];
+    const cached = online.entries['forge90-v20260908-workout-ui-1'];
     for (const asset of ['/', '/index.html', '/styles.css', '/app.js', '/vendor/dexie.min.js',
       '/forge90-storage.js', '/forge90-base-app.js', '/forge90-session-controls.js',
-      '/forge90-enhancements.js', '/forge90-weight.js', '/forge90-conditioning-core.js', '/forge90-conditioning.js', '/manifest.webmanifest',
+      '/forge90-enhancements.js', '/forge90-weight.js', '/forge90-conditioning-core.js', '/forge90-progression-core.js', '/forge90-conditioning.js', '/manifest.webmanifest',
       '/icons/forge90-logo.png', '/icons/icon-192.png', '/icons/icon-512.png']) {
       assert.ok(cached.includes(asset), `missing cached asset ${asset}`);
     }
