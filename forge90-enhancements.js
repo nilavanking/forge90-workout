@@ -211,8 +211,8 @@
       const setWrap = row.querySelector('.f90x-sets');
       for (let s = 1; s <= setCount; s++) {
         const st = state.sets?.[s] || {};
-        const set = document.createElement('label');
-        set.className = 'f90x-set';
+        const set = document.createElement('div');
+        set.className = 'f90x-set';set.dataset.savedRecord=JSON.stringify(st);
         set.innerHTML = `<input type="checkbox" ${st.done ? 'checked' : ''} data-set="${s}"><span>S${s}</span><input class="f90x-weight" type="number" min="0" step="0.5" inputmode="decimal" placeholder="kg" value="${esc(st.weight ?? '')}" aria-label="${esc(ex.name)} set ${s} weight"><input class="f90x-reps" type="number" min="0" step="1" inputmode="numeric" placeholder="reps" value="${esc(st.reps ?? '')}" aria-label="${esc(ex.name)} set ${s} reps">`;
         const checkbox = set.querySelector('input[type=checkbox]');
         const weight = set.querySelector('.f90x-weight');
@@ -221,9 +221,10 @@
           const all = getLogs();
           all[k] ||= { name: ex.name, plan, day, sets: {} };
           all[k].name = ex.name; all[k].plan = plan; all[k].day = day; all[k].reps = ex.reps; all[k].setCount = setCount;
-          all[k].sets[s] = { done: checkbox.checked, weight: weight.value, reps: reps.value };
+          all[k].sets[s] = { ...all[k].sets[s], done: checkbox.checked, weight: weight.value, reps: reps.value };
           setLogs(all);
         };
+        set.addEventListener('forge90-set-record',e=>{const all=getLogs();all[k]||={name:ex.name,plan,day,sets:{}};all[k].sets[s]=e.detail;setLogs(all);});
         checkbox.addEventListener('change', persist);
         weight.addEventListener('input', persist);
         reps.addEventListener('input', persist);
@@ -318,38 +319,58 @@
 
   function openHomeSession(plan, session) {
     document.getElementById('forge90-home-core-overlay')?.remove();
+    window.Forge90Storage.setItem('forge90_home_active_v1',JSON.stringify({plan,id:session.id}));
     const logs = getLogs();
     const overlay = document.createElement('div');
     overlay.id = 'forge90-home-core-overlay';
     overlay.className = 'f90x-overlay';
     overlay.innerHTML = `<div class="f90x-modal"><div class="f90x-modalhead"><div><h2 style="margin:0">${esc(session.title)}</h2><div class="f90x-muted">${esc(session.subtitle)}</div></div><button class="f90x-close" type="button" aria-label="Close">×</button></div><div class="f90x-list"></div><div class="f90x-note">Controlled, pain-free movement only. This home session complements the gym plan; it does not replace any gym exercise.</div><div style="display:flex;gap:10px;margin-top:16px"><button class="f90x-btn" type="button" data-finish>Finish Home Core</button></div></div>`;
-    overlay.querySelector('.f90x-close').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('.f90x-close').addEventListener('click', () => {window.Forge90Storage.removeItem('forge90_home_active_v1');overlay.remove();});
     const list = overlay.querySelector('.f90x-list');
     session.exercises.forEach((ex, i) => {
       const k = `home:${plan}:${session.id}:${i}`;
       const state = logs[k] || { sets: {} };
       const row = document.createElement('div'); row.className = 'f90x-ex';
+      row.dataset.recordScope=`home:${plan}:${session.id}:`;
       row.innerHTML = `<strong>${esc(ex.name)}</strong><div class="f90x-meta">${ex.sets} sets × ${esc(ex.reps)}</div><div class="f90x-sets"></div>`;
       const wrap = row.querySelector('.f90x-sets');
-      for (let s=1; s<=ex.sets; s++) {
+      const homeSetCount=state.setCount||ex.sets;
+      for (let s=1; s<=homeSetCount; s++) {
         const st = state.sets?.[s] || {};
-        const label = document.createElement('label'); label.className='f90x-set';
+        const label = document.createElement('div'); label.className='f90x-set';label.dataset.savedRecord=JSON.stringify(st);
         label.innerHTML = `<input type="checkbox" ${st.done ? 'checked' : ''}><span>Set ${s}</span>`;
         const cb = label.querySelector('input');
+        label.addEventListener('forge90-set-record',e=>{const all=getLogs();all[k]||={name:ex.name,plan,session:session.id,sets:{}};all[k].sets[s]=e.detail;setLogs(all);});
         cb.addEventListener('change', () => {
           const all = getLogs(); all[k] ||= { name: ex.name, plan, session: session.id, sets: {} };
-          all[k].sets[s] = { done: cb.checked }; setLogs(all);
+          all[k].sets[s] = { ...all[k].sets[s], done: cb.checked }; setLogs(all);
         });
         wrap.appendChild(label);
       }
+      const actions=document.createElement('div');actions.className='exercise-actions';
+      actions.innerHTML='<button type="button" class="ghost-btn" data-add>+ Add Set</button><button type="button" class="ghost-btn" data-remove>Remove Set</button>';
+      actions.querySelector('[data-remove]').disabled=homeSetCount<=1||['active','completed','interrupted'].includes(state.sets?.[homeSetCount]?.status);
+      actions.querySelector('[data-add]').disabled=homeSetCount>=10;
+      actions.onclick=event=>{
+        const delta=event.target.closest('[data-add]')?1:event.target.closest('[data-remove]')?-1:0;if(!delta)return;
+        const all=getLogs();all[k]||={name:ex.name,plan,session:session.id,sets:{}};
+        if(delta<0&&['active','completed','interrupted'].includes(all[k].sets[homeSetCount]?.status))return;
+        all[k].setCount=Math.max(1,Math.min(10,homeSetCount+delta));
+        if(delta<0){window.Forge90Session.removeDraft(row.dataset.recordScope+ex.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+':'+(homeSetCount-1));delete all[k].sets[homeSetCount];}
+        setLogs(all);openHomeSession(plan,session);
+      };row.appendChild(actions);
       list.appendChild(row);
     });
     overlay.querySelector('[data-finish]').addEventListener('click', () => {
+      const summary=window.Forge90Session.finishHome(`home:${plan}:${session.id}:`);if(!summary)return;
       const all = getLogs();
       const exercises = session.exercises.map((ex,i) => ({ name: ex.name, reps: ex.reps, sets: all[`home:${plan}:${session.id}:${i}`]?.sets || {} }));
       const history = getHistory();
       history.push({ id:`home-${Date.now()}`, type:'home-core', plan, sessionId:session.id, title:session.title, completedAt:new Date().toISOString(), exercises });
       setHistory(history.slice(-250));
+      window.Forge90App.saveSupplemental({summary,title:session.title,plan});
+      for(let i=0;i<session.exercises.length;i++)delete all[`home:${plan}:${session.id}:${i}`];
+      setLogs(all);window.Forge90Storage.removeItem('forge90_home_active_v1');
       overlay.remove();
     });
     document.body.appendChild(overlay);
@@ -394,6 +415,8 @@
     document.addEventListener('change', scheduleRender, true);
     new MutationObserver(scheduleRender).observe(document.documentElement, { childList:true, subtree:true });
     scheduleRender();
+    const resumed=safeParse(window.Forge90Storage.getItem('forge90_home_active_v1'),null);
+    if(resumed){const session=HOME[resumed.plan]?.find(s=>s.id===resumed.id);if(session)openHomeSession(resumed.plan,session);}
     setTimeout(() => { renderGymAddons(); renderHomeCoreCards(); }, 500);
     if (sessionStorage.getItem(RETURN_HOME_KEY) === '1') setTimeout(returnHome, 300);
     console.info(`[Forge90] enhancements ${VERSION} loaded; original workout data remains untouched.`);

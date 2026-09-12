@@ -164,7 +164,7 @@
     $('workoutFocus').textContent=`${w.day}: ${w.name} — ${w.focus}`;
     const wrap=$('exerciseCards'); wrap.innerHTML='';
     aw.logs.forEach((log,exerciseIndex)=>{
-      const card=document.createElement('article'); card.className='exercise-card';
+      const card=document.createElement('article'); card.className='exercise-card'; card.dataset.exerciseIndex=exerciseIndex;
       const head=document.createElement('div'); head.className='exercise-head';
       const title=document.createElement('div'); title.innerHTML=`<strong>${escapeHtml(log.name)}</strong><div class="target">Plan: ${escapeHtml(log.target).replace(' × ',' sets × ')} reps</div>`;
       const guide=document.createElement('button'); guide.type='button'; guide.className='ghost-btn guide-btn'; guide.textContent='How to do it'; guide.addEventListener('click',()=>openGuide(log.key,log.name));
@@ -183,7 +183,7 @@
       card.appendChild(table);
       const actions=document.createElement('div');actions.className='exercise-actions';
       const add=document.createElement('button');add.type='button';add.className='ghost-btn';add.textContent='+ Add Set';add.addEventListener('click',()=>{if(log.sets.length<10){log.sets.push({weight:'',reps:'',done:false});saveState();renderWorkout();}});
-      const remove=document.createElement('button');remove.type='button';remove.className='ghost-btn';remove.textContent='Remove Set';remove.disabled=log.sets.length<=1;remove.addEventListener('click',()=>{if(log.sets.length>1){log.sets.pop();saveState();renderWorkout();}});
+      const remove=document.createElement('button');remove.type='button';remove.className='ghost-btn';remove.textContent='Remove Set';remove.disabled=log.sets.length<=1||['active','completed','interrupted'].includes(log.sets.at(-1)?.status);remove.addEventListener('click',()=>{if(log.sets.length>1&&!['active','completed','interrupted'].includes(log.sets.at(-1)?.status)){const removed=log.sets.pop();if(removed.id)window.Forge90Session?.removeDraft(removed.id);saveState();renderWorkout();}});
       actions.append(add,remove);card.appendChild(actions);wrap.appendChild(card);
     });
     renderLiveTotals();
@@ -205,7 +205,7 @@
     let sets=0,reps=0,volume=0,completedExercises=0;
     aw.logs.forEach(log=>{
       let exerciseDone=false;
-      log.sets.forEach(s=>{if(s.done){const w=Math.max(0,Number(s.weight)||0);const r=Math.max(0,Number(s.reps)||0);sets++;reps+=r;volume+=w*r;exerciseDone=true;}});
+      log.sets.forEach(s=>{if(s.done){const m=window.Forge90Measurements.metrics(s);sets++;reps+=m.reps;volume+=m.volume;exerciseDone=true;}});
       if(exerciseDone)completedExercises++;
     });
     return {sets,reps,volume,completedExercises};
@@ -227,21 +227,38 @@
   function finishWorkout(){
     persistActiveInputs();
     const aw=state.activeWorkout; const t=totals(aw); const plan=plans[aw.mode][aw.index];
-    if(t.sets===0){alert('Complete at least one set before finishing the workout.');return;}
+    if(t.sets===0&&!window.Forge90Session?.getState().sets.some(s=>s.status==='interrupted')){alert('Complete at least one set before finishing the workout.');return;}
     if(window.Forge90Conditioning && !window.Forge90Conditioning.canFinish()) return;
     const record={
       id:aw.id,date:aw.date,completedAt:new Date().toISOString(),mode:aw.mode,day:plan.day,name:plan.name,focus:plan.focus,
       bodyWeight:aw.bodyWeight,duration:aw.duration,cardioMinutes:aw.cardioMinutes,cardioIntensity:aw.cardioIntensity,
       sets:t.sets,reps:t.reps,volume:Math.round(t.volume),calories:calorieEstimate(aw),completedExercises:t.completedExercises,totalExercises:aw.logs.length,
-      exercises:aw.logs.map(log=>({name:log.name,target:log.target,sets:log.sets.filter(s=>s.done).map(s=>({weight:Number(s.weight)||0,reps:Number(s.reps)||0}))})).filter(x=>x.sets.length)
+      exercises:aw.logs.map(log=>({name:log.name,target:log.target,sets:log.sets.filter(s=>s.done).map(s=>({...clone(s),weight:s.weight===''?null:Number(s.weight),reps:s.reps===''?null:Number(s.reps)}))})).filter(x=>x.sets.length)
     };
-    window.Forge90Session?.finalize();
+    const sessionSummary=window.Forge90Session?.finalize();record.sessionId=sessionSummary?.id;record.sessionSets=sessionSummary?.sets||[];
+    const extras=record.sessionSets.filter(s=>s.status==='completed'&&!s.id?.startsWith('home:')&&!record.exercises.some(e=>e.name===s.exercise));
+    for(const name of [...new Set(extras.map(s=>s.exercise))])record.exercises.push({name,sets:extras.filter(s=>s.exercise===name)});
+    record.sets+=extras.length;record.reps+=extras.reduce((n,s)=>n+window.Forge90Measurements.metrics(s).reps,0);record.volume+=extras.reduce((n,s)=>n+window.Forge90Measurements.metrics(s).volume,0);
     window.Forge90Conditioning?.finish(record);
     state.workouts.unshift(record); state.activeWorkout=null; saveState();
     window.dispatchEvent(new CustomEvent('forge90-workout-saved',{detail:{id:record.id}}));
     openReport(record); renderHome(); renderHistory();
   }
 
+  function saveSupplemental({summary,title,plan}){
+  const sets=summary.sets.filter(s=>s.status==='completed'),names=[...new Set(sets.map(s=>s.exercise))],M=window.Forge90Measurements;
+  const record={id:summary.id,sessionId:summary.id,date:summary.finishedAt.slice(0,10),completedAt:summary.finishedAt,day:'Home Core',name:title,mode:plan==='5'?'five':'four',sets:sets.length,reps:sets.reduce((n,s)=>n+M.metrics(s).reps,0),volume:sets.reduce((n,s)=>n+M.metrics(s).volume,0),calories:0,duration:Math.max(0,(new Date(summary.finishedAt)-new Date(summary.startedAt))/60000),completedExercises:names.length,totalExercises:names.length,sessionSets:summary.sets,exercises:names.map(name=>({name,sets:sets.filter(s=>s.exercise===name)}))};
+  state.workouts.unshift(record);saveState();openReport(record);renderHome();renderHistory();
+}
+  function correctDiscomfort(sessionId,value){
+  const record=state.workouts.find(w=>w.sessionId===sessionId);if(!record)return;
+  for(const set of [...(record.sessionSets||[]),...record.exercises.flatMap(e=>e.sets)]){
+    if(set.id===value.id){set.discomfort=clone(value.discomfort);set.status=value.status;set.done=value.status==='completed';}
+  }
+  const completed=(record.sessionSets||[]).filter(s=>s.status==='completed');
+  record.sets=completed.length;record.reps=completed.reduce((n,s)=>n+window.Forge90Measurements.metrics(s).reps,0);record.volume=completed.reduce((n,s)=>n+window.Forge90Measurements.metrics(s).volume,0);record.completedExercises=new Set(completed.map(s=>s.exercise)).size;
+  saveState();
+}
   function openGuide(key,name){
     const g=guides[key]; if(!g)return;
     $('guideTitle').textContent=name;$('guideEquipment').textContent=g.equipment;$('guideMuscles').textContent=g.muscles;$('guideSetup').textContent=g.setup;$('guideAvoid').textContent=g.avoid;$('guideAlt').textContent=g.alt;
@@ -251,11 +268,12 @@
 
   function openReport(record){
     $('reportTitle').textContent=`${record.day} — ${record.name}`;$('reportDuration').textContent=`${record.duration} min`;$('reportExercises').textContent=`${record.completedExercises}/${record.totalExercises}`;$('reportSets').textContent=record.sets;$('reportReps').textContent=record.reps;$('reportVolume').textContent=`${fmtNum(record.volume)} kg`;$('reportCalories').textContent=`${record.calories} kcal`;
-    const details=$('reportDetails');details.innerHTML='';record.exercises.forEach(ex=>{
-      const vol=ex.sets.reduce((a,s)=>a+s.weight*s.reps,0);const best=ex.sets.reduce((b,s)=>s.weight>b.weight?s:b,ex.sets[0]);
-      const d=document.createElement('div');d.className='history-item';d.innerHTML=`<strong>${escapeHtml(ex.name)}</strong><div class="history-meta">${ex.sets.length} sets · ${fmtNum(vol)} kg volume · best ${best.weight} kg × ${best.reps}</div>`;details.appendChild(d);
+    const details=$('reportDetails');details.innerHTML='';record.exercises.forEach(stored=>{const ex={...stored,sets:stored.sets.filter(s=>s.status!=='interrupted')};if(!ex.sets.length)return;
+      const vol=ex.sets.reduce((a,s)=>a+window.Forge90Measurements.metrics(s).volume,0);const best=ex.sets.reduce((b,s)=>window.Forge90Measurements.metrics(s).volume>window.Forge90Measurements.metrics(b).volume?s:b,ex.sets[0]);
+      const d=document.createElement('div');d.className='history-item';d.innerHTML=`<strong>${escapeHtml(ex.name)}</strong><div class="history-meta">${ex.sets.length} sets · ${fmtNum(vol)} kg volume · best ${escapeHtml(window.Forge90Measurements.format(best))}</div>`;details.appendChild(d);
     });
     $('reportGuidance').textContent=record.completedExercises===record.totalExercises?'If technique stayed controlled and you reached the top of the target rep range, increase the load slightly next time. Otherwise keep the same weight and aim for one or two more clean reps.':'Complete the missing planned exercises next time before increasing overall training volume.';
+    const pain=(record.sessionSets||record.exercises.flatMap(e=>e.sets)).filter(s=>s.discomfort&&s.discomfort.severity!=='None');if(pain.length){const p=document.createElement('p');p.textContent='Discomfort: '+pain.map(s=>s.exercise+' — '+s.discomfort.severity+(s.discomfort.bodyArea?' ('+s.discomfort.bodyArea+')':'')).join('; ');details.appendChild(p);}
     window.Forge90Conditioning?.report(record);
     $('reportDialog').showModal();
   }
@@ -330,6 +348,7 @@
     else window.addEventListener('load',registerServiceWorker,{once:true});
   }
 
-  window.Forge90App = Object.freeze({getActive:()=>state.activeWorkout ? {...clone(state.activeWorkout),...clone({name:plans[state.activeWorkout.mode][state.activeWorkout.index].name,focus:plans[state.activeWorkout.mode][state.activeWorkout.index].focus})}:null});
+  window.Forge90App = Object.freeze({saveSupplemental,correctDiscomfort,updateSet:(exerciseIndex,setIndex,value)=>{const set=state.activeWorkout?.logs[exerciseIndex]?.sets[setIndex];if(!set)return;Object.assign(set,clone(value));saveState();renderLiveTotals();},getActive:()=>state.activeWorkout ? {...clone(state.activeWorkout),...clone({name:plans[state.activeWorkout.mode][state.activeWorkout.index].name,focus:plans[state.activeWorkout.mode][state.activeWorkout.index].focus})}:null});
   renderHome();
+  if(state.activeWorkout)showView('workoutView');
 })();

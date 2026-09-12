@@ -9,9 +9,9 @@
   const terminal = a => ['Completed', 'Stopped Early', 'Skipped'].includes(a.status);
   const clamp = (n, min, max) => Math.max(min, Math.min(max, Number(n) || 0));
   const create = (minutes, extra = {}) => ({targetMs: minutes * MINUTE, elapsedMs: 0, runningSince: null, status: 'Not Started', reason: null, events: [], ...extra});
-  const actual = (a, now) => Math.min(a.targetMs, Math.max(0, a.elapsedMs + (a.status === 'Running' ? Math.max(0, now - a.runningSince) : 0)));
+  const actual = (a, now) => (a.kind === 'warmup' ? Math.max(0, a.elapsedMs + (a.status === 'Running' ? Math.max(0, now - a.runningSince) : 0)) : Math.min(a.targetMs, Math.max(0, a.elapsedMs + (a.status === 'Running' ? Math.max(0, now - a.runningSince) : 0))));
   function settle(a, now) {
-    if (a.status === 'Running' && actual(a, now) >= a.targetMs) {
+    if (a.kind !== 'warmup' && a.status === 'Running' && actual(a, now) >= a.targetMs) {
       a.elapsedMs = a.targetMs; a.runningSince = null; a.status = 'Completed';
     }
     return a;
@@ -23,7 +23,7 @@
     else if (command === 'pause' && a.status === 'Running') { a.elapsedMs = actual(a, now); a.runningSince = null; a.status = 'Paused'; }
     else if (command === 'resume' && a.status === 'Paused' && !a.safetyHold) { a.runningSince = now; a.status = 'Running'; }
     else if (command === 'stop' && ['Running', 'Paused'].includes(a.status)) { a.elapsedMs = actual(a, now); a.runningSince = null; a.status = 'Stopped Early'; a.reason = reason; }
-    else if (command === 'skip') { a.elapsedMs = actual(a, now); a.runningSince = null; a.status = 'Skipped'; a.reason = reason; }
+    else if (command === 'skip') { a.elapsedMs = a.kind === 'warmup' ? 0 : actual(a, now); a.runningSince = null; a.status = 'Skipped'; a.reason = reason; }
     else if (command === 'complete' && a.kind === 'warmup' && ['Running', 'Paused'].includes(a.status) && !a.safetyHold) { a.elapsedMs = actual(a, now); a.runningSince = null; a.status = 'Completed'; }
     else return false;
     a.events.push({command, at: now, reason});

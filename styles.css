@@ -38,3 +38,31 @@ h1{font-size:clamp(1.65rem,4vw,2.35rem);line-height:1.08;margin:.2rem 0 .45rem}h
 .history-list{display:grid;gap:10px;margin-top:12px}.history-item{border:1px solid var(--border);background:#101720;border-radius:16px;padding:13px}.history-top{display:flex;justify-content:space-between;gap:10px}.history-item strong{display:block}.history-meta{color:var(--muted);font-size:.78rem;margin-top:5px;line-height:1.5}.history-actions{display:flex;gap:8px;margin-top:10px}.small-btn{border:1px solid var(--border);border-radius:11px;background:#0c1219;color:var(--text);min-height:40px;padding:0 11px}.danger{color:#ffaaaa}.empty-state{padding:18px 0;color:var(--muted)}.progress-summary{display:grid;gap:8px}.delta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.delta-grid div{border-radius:13px;background:#0d141c;border:1px solid var(--border);padding:11px}.delta-grid span{display:block;font-size:.72rem;color:var(--muted)}.delta-grid strong{display:block;margin-top:5px}.positive{color:var(--success)}.negative{color:#ffb3b3}
 @media(min-width:620px){.stats-grid{grid-template-columns:repeat(4,1fr)}.goal-grid{grid-template-columns:repeat(3,1fr)}.form-grid{grid-template-columns:repeat(3,1fr)}.form-grid.two{grid-template-columns:repeat(2,1fr)}.week-cards{grid-template-columns:repeat(2,1fr)}.report-grid{grid-template-columns:repeat(3,1fr)}.guide-grid{grid-template-columns:repeat(2,1fr)}.live-bar{grid-template-columns:120px 120px 160px 1fr;align-items:center}.live-bar button{grid-column:auto}.delta-grid{grid-template-columns:repeat(4,1fr)}}
 @media(min-width:860px){.week-cards{grid-template-columns:repeat(4,1fr)}.form-grid{grid-template-columns:repeat(3,1fr)}}
+/* V1: reflow controls and long messages before reducing touch targets. */
+body .exercise-card, body .f90x-ex, body .f90c-section, body .f90x-modal { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+body .set-row, body .f90x-set { display:grid; grid-template-columns:30px minmax(0,1fr) 82px; gap:8px; width:100%; min-width:0; padding:10px 0; align-items:center; }
+body .f90v1-fields { grid-column:2; grid-row:1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; min-width:0; }
+body .f90v1-fields label, body .f90v1-fields input { min-width:0; width:100%; box-sizing:border-box; }
+body .f90v2-start { grid-column:3; grid-row:1; width:82px; height:44px; min-height:44px; }
+body .f90v2-target, body .f90v1-explanation, body .f90v1-discomfort { grid-column:1/-1; position:static; display:block; width:auto; font-size:.8rem; overflow-wrap:anywhere; }
+body .f90v1-actual { grid-column:1/-1; overflow-wrap:anywhere; }
+body .f90v2-equipment label, body .f90v2-equipment select { min-width:0; max-width:100%; }
+body .f90v1-discomfort label, body .f90v1-load-config label { display:block; margin:8px 0; }
+body .f90v1-discomfort input, body .f90v1-discomfort select, body .f90v1-load-config input { width:100%; max-width:100%; box-sizing:border-box; }
+body .exercise-head { flex-wrap:wrap; min-width:0; }
+body .exercise-head > div { min-width:0; flex:1 1 150px; }
+body .exercise-actions, body .f90c-controls { display:flex; flex-wrap:wrap; gap:8px; }
+body .f90c-controls button, body .exercise-actions button { min-height:44px; max-width:100%; white-space:normal; }
+body .f90c-accordion-head { min-width:0; gap:8px; overflow-wrap:anywhere; }
+body .f90c-accordion-head > span { min-width:0; }
+body .f90x-sets { display:block; }
+body #forge90-session-bar { bottom:calc(80px + env(safe-area-inset-bottom)); left:max(10px,env(safe-area-inset-left)); right:max(10px,env(safe-area-inset-right)); }
+body:has(#forge90-session-bar.show) .app-shell { padding-bottom:280px; }
+body button:focus-visible, body input:focus-visible, body select:focus-visible { outline:2px solid #93c5fd; outline-offset:3px; }
+@media(max-width:430px) {
+  body .set-row, body .f90x-set { grid-template-columns:24px minmax(0,1fr); }
+  body .f90v2-start { grid-column:2; grid-row:2; justify-self:end; }
+  body .f90v1-fields { grid-column:2; }
+  body .f90c-accordion-head { flex-wrap:wrap; }
+  body .f90x-modal { padding:12px; }
+}

@@ -61,7 +61,8 @@
   function place() {
     const view = $('workoutView'), exercises = $('exerciseCards'), bar = view.querySelector('.live-bar');
     if (!$('f90c-warmup') || !bar) return;
-    if (exercises.previousElementSibling !== $('f90c-warmup')) view.insertBefore($('f90c-warmup'), exercises);
+    const strength=$('f90v2-strength-head')||exercises;
+    if (strength.previousElementSibling !== $('f90c-warmup')) view.insertBefore($('f90c-warmup'), strength);
     const addons = $('forge90-gym-addons');
     if (addons && addons.nextElementSibling !== $('f90c-cardio')) addons.after($('f90c-cardio'));
     else if (!addons && exercises.nextElementSibling !== $('f90c-cardio')) exercises.after($('f90c-cardio'));
@@ -70,12 +71,13 @@
   }
   function button(action, label, kind, index = '', extra = '') { return `<button type="button" class="ghost-btn f90c-button" data-c-action="${action}" data-kind="${kind}" data-index="${index}" ${extra}>${label}</button>`; }
   function controlRow(kind, index = '') {
-    return `<div class="f90c-controls">${button('start', 'Start', kind, index)}${button('pause', 'Pause', kind, index)}${button('resume', 'Resume', kind, index)}${kind === 'warmup' ? button('complete', 'Complete', kind, index) : ''}${button('stop', 'Stop', kind, index)}${button('plus', kind === 'cardio' ? '+5 MIN' : '+1 MIN', kind, index)}${button('minus', kind === 'cardio' ? '−5 MIN' : '−1 MIN', kind, index)}${button('skip', 'Skip', kind, index)}${button('safety', 'Back discomfort?', kind, index)}</div>`;
+    return `<div class="f90c-controls">${button('start', 'Start', kind, index)}${button('pause', 'Pause', kind, index)}${button('resume', 'Resume', kind, index)}${kind === 'warmup' ? button('complete', 'Complete', kind, index) : ''}${button('stop', 'Stop', kind, index)}${button('plus', kind === 'cardio' ? '+5 MIN' : kind === 'warmup' ? '+15 sec' : '+1 MIN', kind, index)}${button('minus', kind === 'cardio' ? '−5 MIN' : kind === 'warmup' ? '−15 sec' : '−1 MIN', kind, index)}${button('skip', 'Skip', kind, index)}${button('safety', 'Back discomfort?', kind, index)}</div>`;
   }
   function accordion(node,label,summary,open=false){
+    session.open ||= {};const openKey=node.id||label;open=session.open[openKey]??open;
     const body=document.createElement('div');body.className='f90c-accordion-body';while(node.firstChild)body.appendChild(node.firstChild);
     const head=document.createElement('button');head.type='button';head.className='f90c-accordion-head';head.setAttribute('aria-expanded',String(open));head.setAttribute('aria-controls',`${node.id||`f90c-${label.toLowerCase()}`}-body`);head.innerHTML=`<span><strong>${esc(label)}</strong><small>${esc(summary)}</small></span><span data-c-accordion-status>Not Started</span><b aria-hidden="true">${open?'▲':'▼'}</b>`;
-    body.id=head.getAttribute('aria-controls');body.hidden=!open;head.onclick=()=>{const next=head.getAttribute('aria-expanded')!=='true';head.setAttribute('aria-expanded',String(next));body.hidden=!next;head.querySelector('b').textContent=next?'▲':'▼';};node.append(head,body);return head;
+    body.id=head.getAttribute('aria-controls');body.hidden=!open;head.onclick=()=>{const next=head.getAttribute('aria-expanded')!=='true';head.setAttribute('aria-expanded',String(next));body.hidden=!next;session.open[openKey]=next;save();head.querySelector('b').textContent=next?'▲':'▼';};node.append(head,body);return head;
   }
   function render() {
     if (!session) return;
@@ -116,7 +118,7 @@
     const warmupMs = session.warmup.reduce((n,a) => n + C.actual(a,now),0), cardioMs = C.actual(session.cardio,now), recoveryMs = C.actual(session.recovery,now);
     const strengthMs = activeMs('strength',now), coreMs = activeMs('core',now);
     const statuses = session.warmup.map(a => a.status);
-    const warmupStatus = statuses.every(s => s === 'Completed') ? 'Completed' : statuses.every(s => s === 'Skipped') ? 'Skipped' : statuses.includes('Running') ? 'Running' : statuses.includes('Paused') ? 'Paused' : statuses.every(s => s === 'Not Started') ? 'Not Started' : 'Partial';
+    const warmupStatus = statuses.every(s => s === 'Completed') ? 'Completed' : statuses.every(s => s === 'Skipped') ? 'Skipped' : statuses.includes('Running') ? 'Running' : statuses.includes('Paused') ? 'Paused' : statuses.every(s => s === 'Not Started') ? 'Not Started' : statuses.every(s=>['Completed','Skipped','Stopped Early'].includes(s)) ? 'Completed (includes skipped/stopped)' : 'Partial';
     const cardioCalories = C.calories(session.cardio, workout.bodyWeight, now);
     const warmupCalories = Math.round(warmupMs / C.MINUTE * 2.5 * 3.5 * workout.bodyWeight / 200);
     const otherCalories = Math.round(((strengthMs + coreMs) * 5 + recoveryMs * 2) / C.MINUTE * 3.5 * workout.bodyWeight / 200);
@@ -126,6 +128,10 @@
       warmup:copy(session.warmup),cardio:copy(session.cardio),recovery:copy(session.recovery),events:copy(session.events)};
   }
   function text(id, value) { const el = document.querySelector(id); if (el && el.textContent !== value) el.textContent = value; }
+  function warmupFlow(){
+    session.flowDone ||= {};session.warmup.forEach((a,i)=>{if(!C.terminal(a)||session.flowDone[i])return;session.flowDone[i]=true;const head=document.querySelector('[data-c-activity-status="warmup:'+i+'"]');if(head?.getAttribute('aria-expanded')==='true')head.click();const next=session.warmup.findIndex((x,j)=>j>i&&!C.terminal(x));const nextHead=document.querySelector('[data-c-activity-status="warmup:'+next+'"]');if(nextHead?.getAttribute('aria-expanded')==='false')nextHead.click();save();});
+    if(session.warmup.every(C.terminal)&&!session.flowFinished){session.flowFinished=true;save();const warm=document.querySelector('[data-c-phase-status="warmup"]');if(warm?.getAttribute('aria-expanded')==='true')warm.click();const strength=document.querySelector('[data-v1-phase="strength"]');if(strength?.getAttribute('aria-expanded')==='false')strength.click();}
+  }
   function tick() {
     if (!session || session.finishedAt) return;
     const now = Date.now(); let changed = false;
@@ -145,6 +151,7 @@
     text('[data-c-total]', fmt(s.totalMs));
     text('[data-c-warmup-summary]', `${s.warmupStatus} · ${fmt(s.warmupMs)} warm-up completed`);
     document.querySelectorAll('[data-c-activity-status]').forEach(head=>{const [kind,index]=head.dataset.cActivityStatus.split(':');const item=getActivity(kind,index);const out=head.querySelector('[data-c-accordion-status]');if(out)out.textContent=item.status;});
+    warmupFlow();
     const phaseStatus={warmup:s.warmupStatus,cardio:s.cardioStatus,recovery:session.recovery.status};document.querySelectorAll('[data-c-phase-status]').forEach(head=>{const out=head.querySelector('[data-c-accordion-status]');if(out)out.textContent=phaseStatus[head.dataset.cPhaseStatus]||'Not Started';});
     text('[data-c-session-state]', session.paused ? 'Session paused' : session.clock ? `${session.clock.phase === 'core' ? 'Core / hips / glutes' : 'Strength'} timing` : 'Activity timing');
     text('[data-c-recommendation]', `${r.minutes} min · ${C.machines[r.machine].name} · RPE ${r.rpe}. ${r.reason} Completed workload: ${r.completedSets} sets (${r.completedLegSets} leg sets). ${r.progression}`);
@@ -172,18 +179,20 @@
         if(cmd==='safety') disabled=!['Running','Paused'].includes(item.status);
         if(cmd==='resume') disabled=item.status!=='Paused'||!!session.paused||!!item.safetyHold;
         if(cmd==='stop'||cmd==='complete') disabled=!['Running','Paused'].includes(item.status)||(cmd==='complete'&&item.safetyHold);
-        if(cmd==='minus') disabled ||= item.targetMs <= (item.kind==='cardio'?5:item.kind==='recovery'?3:1)*C.MINUTE || item.targetMs<=C.actual(item,now);
+        if(cmd==='minus') disabled ||= item.targetMs <= (item.kind==='cardio'?5:item.kind==='recovery'?3:0.25)*C.MINUTE || item.targetMs<=C.actual(item,now);
         if(cmd==='plus'&&item.kind==='recovery') disabled ||= item.targetMs>=5*C.MINUTE;
         if(item.kind==='recovery'&&cmd==='start') disabled ||= !C.terminal(session.cardio);
       }
       b.disabled=!!disabled;
+      if(item?.kind==='warmup'&&['start','pause','resume','complete','plus','minus','skip','stop','safety'].includes(cmd)){const allowed=item.status==='Not Started'?['start','skip']:item.status==='Running'?['pause','plus','minus','complete']:item.status==='Paused'?['resume','plus','minus','complete']:[];b.hidden=!allowed.includes(cmd);}
     });
     if ($('f90c-machine')) $('f90c-machine').disabled=a.status==='Running'||C.terminal(a);
     document.querySelectorAll('[data-c-setting]').forEach(el => {el.disabled = C.terminal(a);});
   }
   function notice(message) { if ($('f90c-notice')) $('f90c-notice').textContent = message; }
   function canStart(item) {
-    if (activities().some(a => a !== item && a.status === 'Running')) { notice('Pause or finish the current activity first.'); return false; }
+    const other=activities().find(a=>a!==item&&['Running','Paused'].includes(a.status));
+    if(other){if(item.kind==='warmup'&&other.kind==='warmup'){if(!confirm('Another warm-up is active. Stop & Start this movement? Cancel keeps the current movement.'))return false;C.action(other,'stop',Date.now());save();}else{notice('Pause or finish the current activity first.');return false;}}
     if (activities().some(a => a.safetyHold)) { notice('Resolve the safety pause deliberately before continuing.'); return false; }
     if (window.Forge90Session.getState().activeSet) { notice('Complete the active strength set before starting another activity.'); return false; }
     closeClock(); window.Forge90Session.pauseForActivity(); return true;
@@ -226,7 +235,7 @@
     if(cmd==='session-pause') {session.resumeClock=session.clock?.phase||null;closeClock(now);session.resumeActivity=activities().findIndex(a=>a.status==='Running');activities().forEach(a=>C.action(a,'pause',now));session.paused=true;window.Forge90Session.pauseAll();}
     else if(cmd==='session-resume') {session.paused=false;window.Forge90Session.resumeAll();if(session.resumeClock)session.clock={phase:session.resumeClock,since:now};const a=activities()[session.resumeActivity];if(a)C.action(a,'resume',now);session.resumeClock=null;session.resumeActivity=-1;}
     else if(cmd==='recommendation') {const r=recommendation();session.recommendation=r;item.targetMs=r.minutes*C.MINUTE;item.machine=r.machine;item.settings=copy(data.preferences.machines[r.machine]||C.machines[r.machine].defaults);save();render();return;}
-    else if(cmd==='plus'||cmd==='minus')C.adjust(item,(cmd==='plus'?1:-1)*(item.kind==='cardio'?5:1),now,item.kind==='cardio'?5:item.kind==='recovery'?3:1);
+    else if(cmd==='plus'||cmd==='minus')C.adjust(item,(cmd==='plus'?1:-1)*(item.kind==='cardio'?5:item.kind==='warmup'?0.25:1),now,item.kind==='cardio'?5:item.kind==='recovery'?3:0.25);
     else {if((cmd==='start'||cmd==='resume')&&!canStart(item))return;C.action(item,cmd,now);if(cmd==='start')notify('start',item);}
     save();tick();
   }
@@ -252,6 +261,7 @@
   }
   function canFinish() {
     if(!session)return true;
+    if(session.warmup.some(a=>['Running','Paused'].includes(a.status))){notice('Return to Warm-up and Complete or Skip the active movement before finishing.');const head=$('f90c-warmup')?.querySelector('.f90c-accordion-head');if(head?.getAttribute('aria-expanded')==='false')head.click();return false;}
     if(activities().some(a=>a.safetyHold)){notice('Resolve the safety pause with Stop before finishing.');return false;}
     const old=window.Forge90Session.getState();
     if(activities().some(a=>a.status==='Running'||a.status==='Paused')||old.activeSet||old.timer) return confirm('An activity, set or rest timer is active. Finish now and record only actual completed time?');
@@ -269,6 +279,7 @@
     const s=record.conditioning,box=document.createElement('section');box.id='f90c-report';box.className='report-section';
     const rows=[['Warm-up duration',fmt(s.warmupMs)],['Strength-training duration',fmt(s.strengthMs)],['Core / Hip / Glute duration',fmt(s.coreMs)],['Cardio target duration',fmt(s.cardioTargetMs)],['Cardio actual duration',fmt(s.cardioMs)],['Cooldown within cardio',fmt(s.cardioCooldownMs)],['Additional recovery',fmt(s.recoveryMs)],['Total session duration',fmt(s.totalMs)],['Strength-training volume',`${record.volume} kg`],['Cardio estimated calories',`${s.cardioCalories} kcal`],['Total estimated workout calories',`${s.totalCalories} kcal`],['Warm-up status',s.warmupStatus],['Cardio status',s.cardioStatus],['Cardio machine',C.machines[s.cardioMachine]?.name||s.cardioMachine],['Cardio settings',Object.entries(s.cardioSettings).filter(([,v])=>v!=null).map(([k,v])=>`${k}: ${v}`).join(', ')],['Skip / stop reason',[...s.warmup,s.cardio,s.recovery].filter(a=>a.reason).map(a=>`${a.name||a.kind}: ${a.reason.code||'Not specified'}${a.reason.details?' — '+a.reason.details:''}`).join('; ')||'None recorded']];
     box.innerHTML=`<h3>Warm-up, cardio & session timing</h3><div class="report-grid">${rows.map(([k,v])=>`<div><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('')}</div><p class="fine-print">Cooldown within cardio is included once in cardio actual time. Calories are approximate gross MET estimates using measured duration; machine levels and RPE are not calorie measurements.</p>`;
+    const movements=document.createElement('div');movements.className='history-list';for(const movement of s.warmup){const row=document.createElement('p');row.textContent=movement.name+' — Planned '+fmt(movement.targetMs)+' — '+(movement.status==='Skipped'?'Skipped':('Actual '+fmt(movement.elapsedMs)+' — '+movement.status))+(movement.reason?.details?' — '+movement.reason.details:'');movements.appendChild(row);}box.appendChild(movements);
     $('reportDetails').before(box);
   }
   window.Forge90Conditioning={attach,onStrengthStart,canFinish,finish,report,getSummary:()=>summary(),getSession:()=>session?copy(session):null};
